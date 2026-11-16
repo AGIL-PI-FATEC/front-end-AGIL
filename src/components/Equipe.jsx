@@ -30,7 +30,7 @@ export default function Equipe({ membros = membrosPadrao, onVerTodos }) {
       {/* Banner Superior do Card de Equipe */}
       <div className="colaborators-card mb-3">
         <div className="d-flex justify-content-between align-items-center m-0 p-2 fw-bold text-white">
-          <h5 className="m-0 fw-bold fs-5">Equipe</h5>
+          <h5 className="m-0 fw-bold fs-5">Funcionários</h5>
           <button
             type="button"
             onClick={onVerTodos}
