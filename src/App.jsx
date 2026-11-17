@@ -8,6 +8,7 @@ import Historico from './pages/Historico';
 import Notificacoes from './pages/Notificacoes';
 import Funcionarios from './pages/Funcionarios';
 import Ajuda from './pages/Ajuda';
+import PerfilGestor from './pages/PerfilGestor';
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
         {/* Dashboard e Tela Inicial do Gestor */}
         <Route path="/inicio-gestor" element={<PaginaInicial />} />
         <Route path="/inicio" element={<PaginaInicial />} />
+        <Route path="/perfil-gestor" element={<PerfilGestor />} />
 
         {/* Funcionalidades */}
         <Route path="/produtos" element={<Produtos />} />
