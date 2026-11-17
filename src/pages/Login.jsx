@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import logo from '../assets/Logo_semfundo.png';
@@ -7,25 +8,84 @@ import '../styles/log.css';
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [erro, setErro] = useState('');
+  const [carregando, setCarregando] = useState(false);
+
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log('Login efetuado:', { email, password });
-    
+
+const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  setErro('');
+  setCarregando(true);
+
+  try {
+    const resposta = await fetch(
+      `${import.meta.env.VITE_API_URL}/auth/login/gestor`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          email: email,
+          senha: password
+        })
+      }
+    );
+
+    const texto = await resposta.text();
+
+    let dados = null;
+
+    if (texto) {
+      try {
+        dados = JSON.parse(texto);
+      } catch {
+        throw new Error('O servidor retornou uma resposta inválida.');
+      }
+    }
+
+    //verifica falhas
+    if (!resposta.ok) {
+      throw new Error(
+        dados?.erro ||
+        dados?.email ||
+        dados?.senha ||
+        `Erro ao realizar login. Código: ${resposta.status}`
+      );
+    }
+
+    // Verificacao
+    if (!dados || !dados.id) {
+      throw new Error('O servidor não retornou os dados do gestor.');
+    }
+
+    // Guarda os dados do gestor que realizou o login
+    sessionStorage.setItem('gestorLogado', JSON.stringify(dados));
+
     // Redireciona após o login
     navigate('/inicio-gestor');
-  };
+
+  } catch (error) {
+    console.error('Erro ao realizar login:', error);
+    setErro(error.message || 'Não foi possível conectar ao servidor.');
+  } finally {
+    setCarregando(false);
+  }
+};
+
 
   return (
     <div className="login-container">
       <div className="login-card">
-        
+
         {/* Lado Esquerdo - Formulário */}
         <div className="login-form">
-          <img 
-            src={logo} 
-            alt="Logo Ágil" 
+          <img
+            src={logo}
+            alt="Logo Ágil"
             style={{ maxWidth: '80px', marginBottom: '10px' }}
             onError={(e) => { e.target.style.display = 'none'; }}
           />
@@ -56,8 +116,18 @@ export default function Login() {
               />
             </div>
 
-            <button type="submit" className="btn-login">
-              Entrar
+            {erro && (
+              <p style={{ color: 'red', marginBottom: '10px' }}>
+                {erro}
+              </p>
+            )}
+
+            <button
+              type="submit"
+              className="btn-login"
+              disabled={carregando}
+            >
+              {carregando ? 'Entrando...' : 'Entrar'}
             </button>
 
             <Link to="/cadastro" className="btn-login1">
