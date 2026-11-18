@@ -1,11 +1,23 @@
 
 import React from 'react';
-import claudiaImg from '../assets/claudia_alves.png';
+import { useNavigate } from 'react-router-dom';
+import imagemPerfil from '../assets/imagem_perfil.png';
+import '../styles/header.css';
 
 export default function Header() {
-    const gestor = JSON.parse(
-        sessionStorage.getItem('gestorLogado') || 'null'
-    );
+    const navigate = useNavigate();
+
+    const usuarioLogado =
+        JSON.parse(sessionStorage.getItem('gestorLogado') || 'null') ||
+        JSON.parse(sessionStorage.getItem('funcionarioLogado') || 'null');
+
+    const tipoUsuario = sessionStorage.getItem('tipoUsuario');
+
+    const caminhoPerfil = tipoUsuario === 'gestor'
+        ? '/perfil-gestor'
+        : tipoUsuario === 'funcionario'
+            ? '/perfil-funcionario'
+            : '/login';
 
     return (
         <div className="header d-flex align-items-center justify-content-between">
@@ -15,20 +27,29 @@ export default function Header() {
                     className="form-control rounded-pill ps-4 pe-5"
                     placeholder="Buscar"
                 />
+
                 <i className="bi bi-search position-absolute top-50 end-0 translate-middle-y me-3"></i>
             </div>
 
             <div className="user d-flex align-items-center gap-2">
                 <span className="fw-medium">
-                    {gestor?.nome || 'Gestor'}
+                    {usuarioLogado?.nome || 'Usuário'}
                 </span>
 
-                <img
-                    src={claudiaImg}
-                    className="rounded-circle"
-                    width="35"
-                    alt="Usuário"
-                />
+                <button
+                    type="button"
+                    className="botao-perfil-header"
+                    onClick={() => navigate(caminhoPerfil)}
+                    title="Acessar meu perfil"
+                >
+                    <img
+                        src={imagemPerfil}
+                        className="rounded-circle"
+                        width="35"
+                        height="35"
+                        alt="Meu perfil"
+                    />
+                </button>
             </div>
         </div>
     );
