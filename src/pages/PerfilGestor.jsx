@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import Perfil from '../components/Perfil';
+import Footer from '../components/Footer';
 
 export default function PerfilGestor() {
     const navigate = useNavigate();
@@ -106,7 +107,17 @@ export default function PerfilGestor() {
     };
 
     return (
-        <div>
+    <>
+        <div className="perfil-pagina">
+
+            <button
+                type="button"
+                className="perfil-voltar"
+                onClick={() => navigate('/inicio-gestor')}
+            >
+                ← Voltar ao início
+            </button>
+
             <Perfil
                 titulo="Meu Perfil"
                 usuario={gestor}
@@ -119,6 +130,7 @@ export default function PerfilGestor() {
 
             <button
                 type="button"
+                className="btn-excluir-perfil"
                 onClick={handleExcluir}
                 disabled={carregando}
             >
@@ -126,6 +138,10 @@ export default function PerfilGestor() {
             </button>
 
             {carregando && <p>Processando...</p>}
+
         </div>
-    );
+
+        <Footer />
+    </>
+);
 }
