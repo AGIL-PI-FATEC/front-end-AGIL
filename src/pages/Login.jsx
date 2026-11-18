@@ -89,9 +89,10 @@ export default function Login() {
         sessionStorage.setItem('funcionarioLogado', JSON.stringify(dados));
         sessionStorage.removeItem('gestorLogado');
       }
+      sessionStorage.setItem('tipoUsuario', tipoUsuario);
 
       // Redireciona após o login
-      navigate('/inicio-gestor');
+      navigate('/inicio');
 
     } catch (error) {
       console.error('Erro ao realizar login:', error);
