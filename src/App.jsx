@@ -9,6 +9,7 @@ import Notificacoes from './pages/Notificacoes';
 import Funcionarios from './pages/Funcionarios';
 import Ajuda from './pages/Ajuda';
 import PerfilGestor from './pages/PerfilGestor';
+import GerenciarFuncionarios from './pages/GerenciarFuncionarios';
 
 function App() {
   return (
@@ -32,6 +33,7 @@ function App() {
         <Route path="/historico" element={<Historico />} />
         <Route path="/notificacoes" element={<Notificacoes />} />
         <Route path="/funcionarios" element={<Funcionarios />} />
+        <Route path="/gerenciar-funcionarios" element={<GerenciarFuncionarios />} />
         <Route path="/ajuda" element={<Ajuda />} />
       </Routes>
     </Router>
