@@ -6,6 +6,7 @@ export default function Perfil({ titulo, usuario, tipo, onSalvar }) {
     const [nome, setNome] = useState(usuario?.nome || '');
     const [email, setEmail] = useState(usuario?.email || '');
 
+    const somenteVisualizacao = tipo === 'funcionario';
 
     useEffect(() => {
         setNome(usuario?.nome || '');
@@ -30,24 +31,34 @@ export default function Perfil({ titulo, usuario, tipo, onSalvar }) {
 
                     <div className="perfil-campo">
                         <label htmlFor="nome">Nome</label>
-                        <input
-                            id="nome"
-                            type="text"
-                            value={nome}
-                            onChange={(e) => setNome(e.target.value)}
-                            required
-                        />
+
+                        {somenteVisualizacao ? (
+                            <p>{usuario?.nome || 'Não informado'}</p>
+                        ) : (
+                            <input
+                                id="nome"
+                                type="text"
+                                value={nome}
+                                onChange={(e) => setNome(e.target.value)}
+                                required
+                            />
+                        )}
                     </div>
 
                     <div className="perfil-campo">
                         <label htmlFor="email">E-mail</label>
-                        <input
-                            id="email"
-                            type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            required
-                        />
+
+                        {somenteVisualizacao ? (
+                            <p>{usuario?.email || 'Não informado'}</p>
+                        ) : (
+                            <input
+                                id="email"
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                required
+                            />
+                        )}
                     </div>
 
                     {tipo === 'gestor' && (
@@ -68,11 +79,27 @@ export default function Perfil({ titulo, usuario, tipo, onSalvar }) {
                             </div>
                         </>
                     )}
+
+                    {tipo === 'funcionario' && (
+                        <>
+                            <div className="perfil-campo">
+                                <label>Cargo</label>
+                                <p>{usuario?.cargo || 'Não informado'}</p>
+                            </div>
+
+                            <div className="perfil-campo">
+                                <label>Nome da Empresa</label>
+                                <p>{usuario?.nomeEmpresa || 'Não informado'}</p>
+                            </div>
+                        </>
+                    )}
                 </div>
 
-                <button type="submit" className="btn-salvar-perfil">
-                    Salvar alterações
-                </button>
+                {!somenteVisualizacao && (
+                    <button type="submit" className="btn-salvar-perfil">
+                        Salvar alterações
+                    </button>
+                )}
             </form>
         </div>
     );
