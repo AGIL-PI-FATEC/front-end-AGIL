@@ -13,69 +13,93 @@ export default function Login() {
 
   const navigate = useNavigate();
 
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
+    setErro('');
+    setCarregando(true);
 
-  setErro('');
-  setCarregando(true);
+    try {
+      const dadosLogin = {
+        email: email,
+        senha: password
+      };
 
-  try {
-    const resposta = await fetch(
-      `${import.meta.env.VITE_API_URL}/auth/login/gestor`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          email: email,
-          senha: password
-        })
-      }
-    );
-
-    const texto = await resposta.text();
-
-    let dados = null;
-
-    if (texto) {
-      try {
-        dados = JSON.parse(texto);
-      } catch {
-        throw new Error('O servidor retornou uma resposta inválida.');
-      }
-    }
-
-    //verifica falhas
-    if (!resposta.ok) {
-      throw new Error(
-        dados?.erro ||
-        dados?.email ||
-        dados?.senha ||
-        `Erro ao realizar login. Código: ${resposta.status}`
+      let resposta = await fetch(
+        `${import.meta.env.VITE_API_URL}/auth/login/gestor`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(dadosLogin)
+        }
       );
+
+      let tipoUsuario = 'gestor';
+
+      //se nao encontrar um gestor com essas credenciais, tenta fazer o login como funcionário
+      if (resposta.status === 401) {
+        resposta = await fetch(
+          `${import.meta.env.VITE_API_URL}/auth/login/funcionario`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(dadosLogin)
+          }
+        );
+
+        tipoUsuario = 'funcionario';
+      }
+
+      const texto = await resposta.text();
+
+      let dados = null;
+
+      if (texto) {
+        try {
+          dados = JSON.parse(texto);
+        } catch {
+          throw new Error('O servidor retornou uma resposta inválida.');
+        }
+      }
+
+      //verifica falhas
+      if (!resposta.ok) {
+        throw new Error(
+          dados?.erro ||
+          dados?.email ||
+          dados?.senha ||
+          `Erro ao realizar login. Código: ${resposta.status}`
+        );
+      }
+
+      // Verificacao
+      if (!dados || !dados.id) {
+        throw new Error('O servidor não retornou os dados do usuário.');
+      }
+
+      // Guarda os dados do usuário que realizou o login
+      if (tipoUsuario === 'gestor') {
+        sessionStorage.setItem('gestorLogado', JSON.stringify(dados));
+        sessionStorage.removeItem('funcionarioLogado');
+      } else {
+        sessionStorage.setItem('funcionarioLogado', JSON.stringify(dados));
+        sessionStorage.removeItem('gestorLogado');
+      }
+
+      // Redireciona após o login
+      navigate('/inicio-gestor');
+
+    } catch (error) {
+      console.error('Erro ao realizar login:', error);
+      setErro(error.message || 'Não foi possível conectar ao servidor.');
+    } finally {
+      setCarregando(false);
     }
-
-    // Verificacao
-    if (!dados || !dados.id) {
-      throw new Error('O servidor não retornou os dados do gestor.');
-    }
-
-    // Guarda os dados do gestor que realizou o login
-    sessionStorage.setItem('gestorLogado', JSON.stringify(dados));
-
-    // Redireciona após o login
-    navigate('/inicio-gestor');
-
-  } catch (error) {
-    console.error('Erro ao realizar login:', error);
-    setErro(error.message || 'Não foi possível conectar ao servidor.');
-  } finally {
-    setCarregando(false);
-  }
-};
-
+  };
 
   return (
     <div className="login-container">
