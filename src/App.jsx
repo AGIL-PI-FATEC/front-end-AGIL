@@ -1,4 +1,6 @@
+
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Cadastro from './pages/Cadastro';
@@ -8,6 +10,7 @@ import Historico from './pages/Historico';
 import Notificacoes from './pages/Notificacoes';
 import Funcionarios from './pages/Funcionarios';
 import Ajuda from './pages/Ajuda';
+import Termos from './pages/Termos';
 import PerfilGestor from './pages/PerfilGestor';
 import GerenciarFuncionarios from './pages/GerenciarFuncionarios';
 import PerfilFuncionario from './pages/PerfilFuncionario';
@@ -23,6 +26,7 @@ function App() {
         {/* Autenticação */}
         <Route path="/login" element={<Login />} />
         <Route path="/cadastro" element={<Cadastro />} />
+        <Route path="/termos" element={<Termos />} />
 
         {/* Dashboard e Tela Inicial do Gestor */}
         <Route path="/inicio-gestor" element={<PaginaInicial />} />
