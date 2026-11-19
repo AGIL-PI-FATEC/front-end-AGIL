@@ -8,6 +8,7 @@ import Historico from './pages/Historico';
 import Notificacoes from './pages/Notificacoes';
 import Funcionarios from './pages/Funcionarios';
 import Ajuda from './pages/Ajuda';
+import Termos from './pages/Termos';
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
         {/* Autenticação */}
         <Route path="/login" element={<Login />} />
         <Route path="/cadastro" element={<Cadastro />} />
+        <Route path="/termos" element={<Termos />} />
 
         {/* Dashboard e Tela Inicial do Gestor */}
         <Route path="/inicio-gestor" element={<PaginaInicial />} />
