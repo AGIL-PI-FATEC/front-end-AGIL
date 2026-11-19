@@ -1,19 +1,27 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
-import BemVindo from '../components/BemVindo';
 import TableCard from '../components/TableCard';
 import Footer from '../components/Footer';
+
+import '../styles/produtos.css';
+
+import luvasImg from '../assets/luvas.jpg';
+import seringaImg from '../assets/seringa.jpg';
+import mascaraImg from '../assets/mascara.jpg';
 import imagemPerfil from '../assets/imagem_perfil.png';
+
+// URL base da API
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+const PRODUTOS_API_URL = `${API_URL}/produtos`;
 
 export default function PaginaInicial() {
     const navigate = useNavigate();
 
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
-
+    // Recupera os dados da sessão
     const gestor = JSON.parse(
         sessionStorage.getItem('gestorLogado') || 'null'
     );
@@ -25,16 +33,24 @@ export default function PaginaInicial() {
     // Identifica o gestor responsável
     const gestorId = gestor?.id || funcionarioLogado?.gestorId;
 
+    // Estados dos funcionários
     const [listaFuncionarios, setListaFuncionarios] = useState([]);
-    const [carregando, setCarregando] = useState(true);
-    const [erro, setErro] = useState('');
+    const [carregandoFuncionarios, setCarregandoFuncionarios] = useState(true);
+    const [erroFuncionarios, setErroFuncionarios] = useState('');
+
+    // Estados dos produtos
+    const [produtos, setProdutos] = useState([]);
+    const [carregandoProdutos, setCarregandoProdutos] = useState(true);
+    const [avisoApi, setAvisoApi] = useState('');
 
     // Busca os funcionários vinculados ao gestor
     useEffect(() => {
         async function buscarFuncionarios() {
             if (!gestorId) {
-                setErro('Não foi possível identificar o gestor responsável.');
-                setCarregando(false);
+                setErroFuncionarios(
+                    'Não foi possível identificar o gestor responsável.'
+                );
+                setCarregandoFuncionarios(false);
                 return;
             }
 
@@ -44,42 +60,139 @@ export default function PaginaInicial() {
                 );
 
                 if (!resposta.ok) {
-                    throw new Error('Não foi possível carregar os funcionários.');
+                    throw new Error(
+                        'Não foi possível carregar os funcionários.'
+                    );
                 }
 
                 const dados = await resposta.json();
+
+                if (!Array.isArray(dados)) {
+                    throw new Error(
+                        'A resposta da API não possui uma lista válida de funcionários.'
+                    );
+                }
+
                 setListaFuncionarios(dados);
 
             } catch (error) {
-                setErro(error.message);
+                console.error('Erro ao buscar funcionários:', error);
+                setErroFuncionarios(error.message);
+                setListaFuncionarios([]);
+
             } finally {
-                setCarregando(false);
+                setCarregandoFuncionarios(false);
             }
         }
 
         buscarFuncionarios();
-    }, [API_URL, gestorId]);
+    }, [gestorId]);
 
-    // Dados de exemplo do estoque
-    const produtosExemplo = [
-        { id: 1, nome: 'Seringa Descartável', quantidade: 150, status: 'Em Estoque' },
-        { id: 2, nome: 'Luvas de Nitrilo', quantidade: 20, status: 'Estoque Baixo' },
-        { id: 3, nome: 'Álcool em Gel 70%', quantidade: 80, status: 'Em Estoque' },
-    ];
+    // Busca os produtos diretamente da API
+    const carregarProdutos = useCallback(async () => {
+        setCarregandoProdutos(true);
+        setAvisoApi('');
 
-    const colunasTabela = (
+        try {
+            const resposta = await fetch(PRODUTOS_API_URL);
+
+            if (!resposta.ok) {
+                throw new Error(`Erro ao carregar produtos: HTTP ${resposta.status}`);
+            }
+
+            const dados = await resposta.json();
+
+            if (!Array.isArray(dados)) {
+                throw new Error(
+                    'A resposta da API não possui uma lista válida de produtos.'
+                );
+            }
+
+            setProdutos(dados);
+
+        } catch (erro) {
+            console.error('Erro ao buscar produtos da API:', erro);
+
+            setProdutos([]);
+
+            setAvisoApi(
+                'Não foi possível conectar ao servidor. Tente novamente mais tarde.'
+            );
+
+        } finally {
+            setCarregandoProdutos(false);
+        }
+    }, []);
+
+    // Carrega os produtos e atualiza ao retornar à página
+    useEffect(() => {
+        carregarProdutos();
+
+        window.addEventListener('focus', carregarProdutos);
+
+        return () => {
+            window.removeEventListener('focus', carregarProdutos);
+        };
+    }, [carregarProdutos]);
+
+    // Navega para a página de edição de produtos
+    const irParaEditarProdutos = (e, produto = null) => {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        navigate('/editar-produtos', {
+            state: produto
+                ? { produtoSelecionado: produto }
+                : undefined
+        });
+    };
+
+    // Identifica a imagem de cada produto
+    const obterImagemProduto = (prod) => {
+        if (prod.imagem) return prod.imagem;
+
+        const nome = prod.nome ? prod.nome.toLowerCase() : '';
+
+        if (nome.includes('luva')) return luvasImg;
+
+        if (nome.includes('seringa')) return seringaImg;
+
+        if (
+            nome.includes('máscara') ||
+            nome.includes('mascara')
+        ) {
+            return mascaraImg;
+        }
+
+        return null;
+    };
+
+    // Colunas da tabela de produtos
+    const colunasProdutos = (
         <>
-            <div className="col-4">Produto</div>
-            <div className="col-4">Quantidade</div>
-            <div className="col-4">Status</div>
+            <div className="col-md-6">Produto</div>
+            <div className="col-md-3">Preço</div>
+            <div className="col-md-3">Estoque</div>
         </>
     );
 
-    const acoesTabela = (
-        <>
-            <i className="bi bi-filter style-pointer" title="Filtrar"></i>
-            <i className="bi bi-plus-circle style-pointer" title="Adicionar"></i>
-        </>
+    // Botão de edição da tabela
+    const acoesProdutos = (
+        <button
+            type="button"
+            onClick={(e) => irParaEditarProdutos(e)}
+            title="Editar Produtos"
+            className="btn btn-link p-0 text-reset"
+            style={{
+                cursor: 'pointer',
+                position: 'relative',
+                zIndex: 10
+            }}
+        >
+            <i className="bi bi-pencil-fill"></i>
+        </button>
     );
 
     return (
@@ -95,11 +208,25 @@ export default function PaginaInicial() {
 
                     <div className="container-fluid flex-grow-1 p-0">
 
+                        {/* Apresentação da página */}
                         <div className="row mb-4">
                             <div className="col-12">
-                                <BemVindo />
+                                <h4 className="fw-bold">
+                                    Visão Geral
+                                </h4>
+
+                                <p className="text-muted">
+                                    Acompanhe o estoque e os funcionários da sua empresa.
+                                </p>
                             </div>
                         </div>
+
+                        {/* Aviso de conexão com a API */}
+                        {avisoApi && (
+                            <div className="alert alert-warning rounded-3 py-2 small">
+                                {avisoApi}
+                            </div>
+                        )}
 
                         <div className="row g-4">
 
@@ -110,35 +237,144 @@ export default function PaginaInicial() {
                                     Resumo do Estoque
                                 </h5>
 
-                                <TableCard colunas={colunasTabela} acoes={acoesTabela}>
-                                    <ul className="list-group list-group-flush">
+                                <TableCard
+                                    colunas={colunasProdutos}
+                                    acoes={acoesProdutos}
+                                >
+                                    {carregandoProdutos ? (
+                                        <div className="p-4 text-center text-muted">
+                                            Carregando produtos...
+                                        </div>
+                                    ) : avisoApi ? (
+                                        <div className="p-4 text-center text-danger">
+                                            Não foi possível carregar os produtos.
+                                        </div>
+                                    ) : produtos.length === 0 ? (
+                                        <div className="p-4 text-center text-muted">
+                                            Nenhum produto cadastrado no momento.
+                                        </div>
+                                    ) : (
+                                        produtos.map((prod, index) => {
+                                            const imgSrc = obterImagemProduto(prod);
 
-                                        {produtosExemplo.map((item) => (
-                                            <li
-                                                key={item.id}
-                                                className="list-group-item d-flex align-items-center justify-content-between p-3"
-                                            >
-                                                <div className="row w-100 align-items-center">
+                                            const estoqueCaixas = Number(
+                                                prod.estoqueCaixas ?? 0
+                                            );
 
-                                                    <div className="col-12 col-md-4 fw-medium">
-                                                        {item.nome}
+                                            const qtdPorCaixa = Number(
+                                                prod.qtdPorCaixa ?? 0
+                                            );
+
+                                            const emEstoque = estoqueCaixas > 0;
+
+                                            return (
+                                                <div
+                                                    key={prod.id ?? index}
+                                                    className={`row align-items-center p-3 m-0 ${
+                                                        index < produtos.length - 1
+                                                            ? 'border-bottom'
+                                                            : ''
+                                                    }`}
+                                                >
+
+                                                    {/* Produto */}
+                                                    <div className="col-12 col-md-6 d-flex align-items-center gap-3 mb-2 mb-md-0">
+
+                                                        {imgSrc ? (
+                                                            <img
+                                                                src={imgSrc}
+                                                                className="rounded shadow-sm"
+                                                                width="45"
+                                                                height="45"
+                                                                style={{
+                                                                    objectFit: 'cover'
+                                                                }}
+                                                                alt={prod.nome}
+                                                            />
+                                                        ) : (
+                                                            <div
+                                                                className="rounded shadow-sm d-flex align-items-center justify-content-center"
+                                                                style={{
+                                                                    width: '45px',
+                                                                    height: '45px',
+                                                                    backgroundColor: '#EBF5F0',
+                                                                    color: '#1B7A56',
+                                                                    flexShrink: 0
+                                                                }}
+                                                            >
+                                                                <i className="bi bi-box-seam fs-5"></i>
+                                                            </div>
+                                                        )}
+
+                                                        <div>
+                                                            <h6 className="mb-0 fw-bold text-dark">
+                                                                {prod.nome}
+                                                            </h6>
+                                                        </div>
+
                                                     </div>
 
-                                                    <div className="col-12 col-md-4 text-muted">
-                                                        {item.quantidade} un
+                                                    {/* Preço */}
+                                                    <div className="col-6 col-md-3">
+
+                                                        <h6 className="mb-0 fw-bold">
+                                                            R$ {Number(
+                                                                prod.preco || 0
+                                                            ).toFixed(2).replace('.', ',')}
+                                                        </h6>
+
+                                                        <small className="text-secondary">
+                                                            Caixa com {qtdPorCaixa}
+                                                        </small>
+
                                                     </div>
 
-                                                    <div className="col-12 col-md-4">
-                                                        <span className={`badge ${item.status === 'Estoque Baixo' ? 'bg-danger' : 'bg-success'}`}>
-                                                            {item.status}
+                                                    {/* Estoque */}
+                                                    <div
+                                                        className={`col-6 col-md-3 fw-medium d-flex align-items-center justify-content-between ${
+                                                            emEstoque
+                                                                ? 'text-success'
+                                                                : 'text-danger'
+                                                        }`}
+                                                    >
+
+                                                        <span>
+                                                            <i className="bi bi-circle-fill small me-1"></i>
+
+                                                            <span className="d-none d-sm-inline">
+                                                                {emEstoque
+                                                                    ? `${estoqueCaixas} ${
+                                                                        estoqueCaixas === 1
+                                                                            ? 'Caixa'
+                                                                            : 'Caixas'
+                                                                    }`
+                                                                    : 'Sem estoque'}
+                                                            </span>
+
+                                                            <span className="d-inline d-sm-none">
+                                                                {emEstoque
+                                                                    ? 'Em estoque'
+                                                                    : 'Sem estoque'}
+                                                            </span>
                                                         </span>
+
+                                                        <button
+                                                            type="button"
+                                                            className="btn btn-sm btn-outline-secondary"
+                                                            title="Editar este produto"
+                                                            onClick={(e) =>
+                                                                irParaEditarProdutos(e, prod)
+                                                            }
+                                                        >
+                                                            <i className="bi bi-pencil"></i>
+                                                        </button>
+
                                                     </div>
 
                                                 </div>
-                                            </li>
-                                        ))}
-
-                                    </ul>
+                                            );
+                                        })
+                                    )}
                                 </TableCard>
 
                             </div>
@@ -147,6 +383,7 @@ export default function PaginaInicial() {
                             <div className="col-12 col-lg-4">
 
                                 <div className="colaborators-card mb-3">
+
                                     <h5 className="d-flex justify-content-between align-items-center fw-bold mb-0 p-2">
 
                                         Funcionários
@@ -161,62 +398,67 @@ export default function PaginaInicial() {
                                         </button>
 
                                     </h5>
+
                                 </div>
 
                                 <div className="bg-white p-4 rounded-4 shadow-sm">
 
                                     <div className="colaborator-list">
 
-                                        {carregando && (
+                                        {carregandoFuncionarios && (
                                             <p className="text-center text-muted">
                                                 Carregando funcionários...
                                             </p>
                                         )}
 
-                                        {!carregando && erro && (
+                                        {!carregandoFuncionarios && erroFuncionarios && (
                                             <p className="text-center text-danger">
-                                                {erro}
+                                                {erroFuncionarios}
                                             </p>
                                         )}
 
-                                        {!carregando && !erro && listaFuncionarios.length === 0 && (
-                                            <p className="text-center text-muted">
-                                                Nenhum funcionário cadastrado.
-                                            </p>
-                                        )}
+                                        {!carregandoFuncionarios &&
+                                            !erroFuncionarios &&
+                                            listaFuncionarios.length === 0 && (
+                                                <p className="text-center text-muted">
+                                                    Nenhum funcionário cadastrado.
+                                                </p>
+                                            )}
 
-                                        {!carregando && !erro && listaFuncionarios.map((func) => (
-                                            <div
-                                                key={func.id}
-                                                className="d-flex align-items-center justify-content-between py-3 border-bottom item-colaborador"
-                                            >
+                                        {!carregandoFuncionarios &&
+                                            !erroFuncionarios &&
+                                            listaFuncionarios.map((func) => (
+                                                <div
+                                                    key={func.id}
+                                                    className="d-flex align-items-center justify-content-between py-3 border-bottom item-colaborador"
+                                                >
 
-                                                <div className="d-flex align-items-center gap-3">
+                                                    <div className="d-flex align-items-center gap-3">
 
-                                                    <img
-                                                        src={func.fotoUrl || imagemPerfil}
-                                                        alt={`Foto de ${func.nome}`}
-                                                        className="rounded-circle object-fit-cover"
-                                                        width="50"
-                                                        height="50"
-                                                    />
+                                                        <img
+                                                            src={func.fotoUrl || imagemPerfil}
+                                                            alt={`Foto de ${func.nome}`}
+                                                            className="rounded-circle object-fit-cover"
+                                                            width="50"
+                                                            height="50"
+                                                        />
 
-                                                    <div>
-                                                        <h6 className="m-0 fw-bold">
-                                                            {func.nome}
-                                                        </h6>
+                                                        <div>
+                                                            <h6 className="m-0 fw-bold">
+                                                                {func.nome}
+                                                            </h6>
 
-                                                        <small className="text-muted">
-                                                            {func.cargo}
-                                                        </small>
+                                                            <small className="text-muted">
+                                                                {func.cargo}
+                                                            </small>
+                                                        </div>
+
                                                     </div>
 
+                                                    <i className="bi bi-chevron-right text-muted"></i>
+
                                                 </div>
-
-                                                <i className="bi bi-chevron-right text-muted"></i>
-
-                                            </div>
-                                        ))}
+                                            ))}
 
                                     </div>
 

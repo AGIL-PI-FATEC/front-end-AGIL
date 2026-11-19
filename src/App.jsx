@@ -6,6 +6,7 @@ import Login from './pages/Login';
 import Cadastro from './pages/Cadastro';
 import PaginaInicial from './pages/PaginaInicial';
 import Produtos from './pages/Produtos';
+import EditarProdutos from './pages/EditarProdutos';
 import Historico from './pages/Historico';
 import Notificacoes from './pages/Notificacoes';
 import Funcionarios from './pages/Funcionarios';
@@ -35,6 +36,7 @@ function App() {
 
         {/* Funcionalidades */}
         <Route path="/produtos" element={<Produtos />} />
+        <Route path="/editar-produtos" element={<EditarProdutos />} />
         <Route path="/historico" element={<Historico />} />
         <Route path="/notificacoes" element={<Notificacoes />} />
         <Route path="/funcionarios" element={<Funcionarios />} />
