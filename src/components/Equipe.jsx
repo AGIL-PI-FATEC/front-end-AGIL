@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { MoreHorizontal, ChevronRight } from 'lucide-react';
 
 const membrosPadrao = [
@@ -30,15 +31,14 @@ export default function Equipe({ membros = membrosPadrao, onVerTodos }) {
       {/* Banner Superior do Card de Equipe */}
       <div className="colaborators-card mb-3">
         <div className="d-flex justify-content-between align-items-center m-0 p-2 fw-bold text-white">
-          <h5 className="m-0 fw-bold fs-5">Equipe</h5>
-          <button
-            type="button"
-            onClick={onVerTodos}
-            aria-label="Mais opções"
+          <h5 className="m-0 fw-bold fs-5">Funcionários</h5>
+          <Link
+            to="/funcionarios"
+            aria-label="Ver funcionários"
             className="btn p-0 text-white border-0 bg-transparent"
-          >
-            <MoreHorizontal size={20} />
-          </button>
+>
+    <MoreHorizontal size={20} />
+        </Link>
         </div>
       </div>
 
@@ -70,13 +70,12 @@ export default function Equipe({ membros = membrosPadrao, onVerTodos }) {
         </div>
 
         <div className="text-center mt-3 pt-2">
-          <button
-            type="button"
-            onClick={onVerTodos}
+          <Link
+            to="/funcionarios"
             className="btn btn-link text-success fw-bold text-decoration-none p-0 small"
-          >
+        >
             Ver todos
-          </button>
+        </Link>
         </div>
       </div>
     </div>
