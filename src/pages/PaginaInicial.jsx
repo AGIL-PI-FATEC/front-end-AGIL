@@ -1,90 +1,228 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
-import BemVindo from '../components/BemVindo';
 import TableCard from '../components/TableCard';
-import Equipe from '../components/Equipe';
 import Footer from '../components/Footer';
+import '../styles/produtos.css';
 
-export default function PaginaInicial() {
-    // Dados de exemplo para preencher dentro do TableCard
-    const produtosExemplo = [
-        { id: 1, nome: 'Seringa Descartável', quantidade: 150, status: 'Em Estoque' },
-        { id: 2, nome: 'Luvas de Nitrilo', quantidade: 20, status: 'Estoque Baixo' },
-        { id: 3, nome: 'Álcool em Gel 70%', quantidade: 80, status: 'Em Estoque' },
-    ];
+import luvasImg from '../assets/luvas.jpg';
+import seringaImg from '../assets/seringa.jpg';
+import mascaraImg from '../assets/mascara.jpg';
 
-    const colunasTabela = (
+const API_URL = 'http://localhost:8080/produtos';
+const STORAGE_KEY = 'agil_produtos';
+
+const PRODUTOS_FALLBACK = [
+    { id: 1, nome: 'Luvas Cirúrgicas', preco: 89.90, qtdPorCaixa: 100, estoqueCaixas: 12 },
+    { id: 2, nome: 'Seringa Descartável', preco: 45.50, qtdPorCaixa: 50, estoqueCaixas: 20 },
+    { id: 3, nome: 'Máscara Cirúrgica', preco: 32.00, qtdPorCaixa: 50, estoqueCaixas: 18 }
+];
+
+function lerProdutosSalvos() {
+    try {
+        const salvos = localStorage.getItem(STORAGE_KEY);
+        if (salvos) {
+            const parsed = JSON.parse(salvos);
+            if (Array.isArray(parsed)) return parsed;
+        }
+    } catch {
+        // ignora erro de leitura
+    }
+    return PRODUTOS_FALLBACK;
+}
+
+export default function Produtos() {
+    const navigate = useNavigate();
+    const [produtos, setProdutos] = useState([]);
+    const [carregando, setCarregando] = useState(true);
+    const [avisoApi, setAvisoApi] = useState('');
+
+    const carregarProdutos = useCallback(async () => {
+        setCarregando(true);
+        try {
+            const resposta = await fetch(API_URL);
+            if (!resposta.ok) {
+                throw new Error(`HTTP ${resposta.status}`);
+            }
+            const dados = await resposta.json();
+            const lista = Array.isArray(dados) ? dados : [];
+            setProdutos(lista);
+            setAvisoApi('');
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(lista));
+        } catch (erro) {
+            console.error('Erro ao buscar produtos da API:', erro);
+            const listaLocal = lerProdutosSalvos();
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(listaLocal));
+            setProdutos(listaLocal);
+            setAvisoApi('Não foi possível conectar à API em localhost:8080. Exibindo dados locais/salvos.');
+        } finally {
+            setCarregando(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        carregarProdutos();
+        window.addEventListener('focus', carregarProdutos);
+
+        return () => {
+            window.removeEventListener('focus', carregarProdutos);
+        };
+    }, [carregarProdutos]);
+
+    const irParaEditarProdutos = (e, produto = null) => {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        navigate('/editar-produtos', {
+            state: produto ? { produtoSelecionado: produto } : undefined
+        });
+    };
+
+    const obterImagemProduto = (prod) => {
+        if (prod.imagem) return prod.imagem;
+        const n = prod.nome ? prod.nome.toLowerCase() : '';
+        if (n.includes('luva')) return luvasImg;
+        if (n.includes('seringa')) return seringaImg;
+        if (n.includes('máscara') || n.includes('mascara')) return mascaraImg;
+        return null;
+    };
+
+    const colunasProdutos = (
         <>
-            <div className="col-4">Produto</div>
-            <div className="col-4">Quantidade</div>
-            <div className="col-4">Status</div>
+            <div className="col-md-6">Produto</div>
+            <div className="col-md-3">Preço</div>
+            <div className="col-md-3">Estoque</div>
         </>
     );
 
-    const acoesTabela = (
-        <>
-            <i className="bi bi-filter style-pointer" title="Filtrar"></i>
-            <i className="bi bi-plus-circle style-pointer" title="Adicionar"></i>
-        </>
+    const acoesProdutos = (
+        <button
+            type="button"
+            onClick={(e) => irParaEditarProdutos(e)}
+            title="Editar Produtos"
+            className="btn btn-link p-0 text-reset"
+            style={{ cursor: 'pointer', position: 'relative', zIndex: 10 }}
+        >
+            <i className="bi bi-pencil-fill"></i>
+        </button>
     );
 
     return (
-        <div className="d-flex flex-column min-vh-100">
-            {/* Wrapper principal Flex: Lado a lado no Desktop, coluna no Mobile */}
-            <div className="d-flex flex-column flex-md-row flex-grow-1">
-                
-                {/* 1. Sidebar */}
-                <Sidebar active="inicio" />
+        <div className="min-vh-100 d-flex flex-column">
+            <div className="d-flex flex-column flex-md-row p-3 gap-3 flex-grow-1">
 
-                {/* 2. Área de Conteúdo Principal */}
-                <main className="flex-grow-1 p-3 p-md-4 d-flex flex-column">
+                <Sidebar active="produtos" />
+
+                <div className="flex-grow-1 w-100">
+
                     <Header />
 
-                    <div className="container-fluid flex-grow-1 p-0">
-                        {/* Mensagem de Boas-Vindas */}
-                        <div className="row mb-4">
-                            <div className="col-12">
-                                <BemVindo />
-                            </div>
+                    {avisoApi && (
+                        <div className="alert alert-warning rounded-3 py-2 small">
+                            {avisoApi}
                         </div>
+                    )}
 
-                        {/* Conteúdo em Grid (Tabela + Equipe) */}
-                        <div className="row g-4">
-                            <div className="col-12 col-lg-8">
-                                <h5 className="fw-bold mb-3">Resumo do Estoque</h5>
-                                <TableCard colunas={colunasTabela} acoes={acoesTabela}>
-                                    <ul className="list-group list-group-flush">
-                                        {produtosExemplo.map((item) => (
-                                            <li 
-                                                key={item.id} 
-                                                className="list-group-item d-flex align-items-center justify-content-between p-3"
-                                            >
-                                                <div className="row w-100 align-items-center">
-                                                    <div className="col-12 col-md-4 fw-medium">{item.nome}</div>
-                                                    <div className="col-12 col-md-4 text-muted">{item.quantidade} un</div>
-                                                    <div className="col-12 col-md-4">
-                                                        <span className={`badge ${item.status === 'Estoque Baixo' ? 'bg-danger' : 'bg-success'}`}>
-                                                            {item.status}
-                                                        </span>
-                                                    </div>
+                    <TableCard colunas={colunasProdutos} acoes={acoesProdutos}>
+                        {carregando ? (
+                            <div className="p-4 text-center text-muted">
+                                Carregando produtos...
+                            </div>
+                        ) : produtos.length === 0 ? (
+                            <div className="p-4 text-center text-muted">
+                                Nenhum produto cadastrado no momento.
+                            </div>
+                        ) : (
+                            produtos.map((prod, index) => {
+                                const imgSrc = obterImagemProduto(prod);
+                                const estoqueCaixas = Number(prod.estoqueCaixas ?? 0);
+                                const qtdPorCaixa = Number(prod.qtdPorCaixa ?? 0);
+                                const emEstoque = estoqueCaixas > 0;
+
+                                return (
+                                    <div
+                                        key={prod.id ?? index}
+                                        className={`row align-items-center p-3 m-0 ${
+                                            index < produtos.length - 1 ? 'border-bottom' : ''
+                                        }`}
+                                    >
+                                        <div className="col-12 col-md-6 d-flex align-items-center gap-3 mb-2 mb-md-0">
+                                            {imgSrc ? (
+                                                <img
+                                                    src={imgSrc}
+                                                    className="rounded shadow-sm"
+                                                    width="45"
+                                                    height="45"
+                                                    style={{ objectFit: 'cover' }}
+                                                    alt={prod.nome}
+                                                />
+                                            ) : (
+                                                <div
+                                                    className="rounded shadow-sm d-flex align-items-center justify-content-center"
+                                                    style={{
+                                                        width: '45px',
+                                                        height: '45px',
+                                                        backgroundColor: '#EBF5F0',
+                                                        color: '#1B7A56',
+                                                        flexShrink: 0
+                                                    }}
+                                                >
+                                                    <i className="bi bi-box-seam fs-5"></i>
                                                 </div>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </TableCard>
-                            </div>
+                                            )}
+                                            <div>
+                                                <h6 className="mb-0 fw-bold text-dark">{prod.nome}</h6>
+                                            </div>
+                                        </div>
 
-                            <div className="col-12 col-lg-4">
-                                <Equipe onVerTodos={() => alert('Ver todos os membros')} />
-                            </div>
-                        </div>
-                    </div>
-                </main>
+                                        <div className="col-6 col-md-3">
+                                            <h6 className="mb-0 fw-bold">
+                                                R$ {Number(prod.preco || 0).toFixed(2).replace('.', ',')}
+                                            </h6>
+                                            <small className="text-secondary">
+                                                Caixa com {qtdPorCaixa}
+                                            </small>
+                                        </div>
+
+                                        <div
+                                            className={`col-6 col-md-3 fw-medium d-flex align-items-center justify-content-between ${
+                                                emEstoque ? 'text-success' : 'text-danger'
+                                            }`}
+                                        >
+                                            <span>
+                                                <i className="bi bi-circle-fill small me-1"></i>
+                                                <span className="d-none d-sm-inline">
+                                                    {emEstoque
+                                                        ? `${estoqueCaixas} ${estoqueCaixas === 1 ? 'Caixa' : 'Caixas'}`
+                                                        : 'Sem estoque'}
+                                                </span>
+                                                <span className="d-inline d-sm-none">
+                                                    {emEstoque ? 'Em estoque' : 'Sem estoque'}
+                                                </span>
+                                            </span>
+
+                                            <button
+                                                type="button"
+                                                className="btn btn-sm btn-outline-secondary"
+                                                title="Editar este produto"
+                                                onClick={(e) => irParaEditarProdutos(e, prod)}
+                                            >
+                                                <i className="bi bi-pencil"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                );
+                            })
+                        )}
+                    </TableCard>
+
+                </div>
             </div>
 
-            {/* Rodapé da Aplicação */}
             <Footer />
+
         </div>
     );
 }
