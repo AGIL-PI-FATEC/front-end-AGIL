@@ -17,35 +17,75 @@ export default function Cadastro() {
     termos: false,
   });
 
+  const [carregando, setCarregando] = useState(false);
+
   const handleChange = (e) => {
     const { id, value, type, checked } = e.target;
+
     setFormData((prev) => ({
       ...prev,
       [id]: type === 'checkbox' ? checked : value,
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+
     if (formData.senha !== formData.confirmarSenha) {
       alert('As senhas não coincidem!');
       return;
     }
+
     if (!formData.termos) {
       alert('Você precisa aceitar os termos.');
       return;
     }
 
-    console.log('Dados do cadastro:', formData);
-    // Redireciona para o login após cadastrar
-    navigate('/login');
+    const dadosCadastro = {
+      nome: formData.nomeCompleto,
+      email: formData.email,
+      cnpj: formData.cnpj,
+      nomeEmpresa: formData.nomeEmpresa,
+      razaoSocial: formData.razaoSocial,
+      senha: formData.senha,
+      confirmacaoSenha: formData.confirmarSenha,
+    };
+
+    try {
+      setCarregando(true);
+
+      // comunicação entre o React e o Spring Boot
+      const response = await fetch('http://localhost:8080/gestores', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(dadosCadastro),
+      });
+
+      const resultado = await response.json();
+
+      if (!response.ok) {
+        alert(resultado.erro || 'Erro ao realizar cadastro.');
+        return;
+      }
+
+      alert('Cadastro realizado com sucesso!');
+      navigate('/login');
+
+    } catch (error) {
+      console.error('Erro ao conectar com o servidor:', error);
+      alert('Não foi possível conectar ao servidor.');
+    } finally {
+      setCarregando(false);
+    }
   };
 
   return (
     <div className="cadastro-container">
       <div className="card shadow border-0 p-4 cadastro-card">
         <div className="row align-items-center w-100 m-0">
-          
+
           {/* Lado Esquerdo - Logo e Título */}
           <div className="col-md-5 text-center mb-4 mb-md-0">
             <img
@@ -55,7 +95,9 @@ export default function Cadastro() {
               onError={(e) => { e.target.style.display = 'none'; }}
             />
             <h1 className="fw-bold fs-2 text-dark">Crie sua conta</h1>
-            <p className="text-muted fs-6">Preencha os dados abaixo para começar</p>
+            <p className="text-muted fs-6">
+              Preencha os dados abaixo para começar
+            </p>
           </div>
 
           {/* Lado Direito - Formulário */}
@@ -154,7 +196,10 @@ export default function Cadastro() {
                   onChange={handleChange}
                   required
                 />
-                <label className="form-check-label text-secondary" htmlFor="termos">
+                <label
+                  className="form-check-label text-secondary"
+                  htmlFor="termos"
+                >
                   Aceito os termos
                 </label>
               </div>
@@ -164,14 +209,20 @@ export default function Cadastro() {
                   type="submit"
                   className="btn btn-dark btn-lg shadow-sm w-100"
                   style={{ borderRadius: '12px' }}
+                  disabled={carregando}
                 >
-                  Criar Conta
+                  {carregando ? 'Cadastrando...' : 'Criar Conta'}
                 </button>
               </div>
 
               <div className="text-center mt-3">
-                <span className="text-muted fs-6">Já possui uma conta? </span>
-                <Link to="/login" className="text-dark fw-bold text-decoration-none">
+                <span className="text-muted fs-6">
+                  Já possui uma conta?{' '}
+                </span>
+                <Link
+                  to="/login"
+                  className="text-dark fw-bold text-decoration-none"
+                >
                   Faça Login
                 </Link>
               </div>
