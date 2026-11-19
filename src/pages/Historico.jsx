@@ -6,65 +6,160 @@ import Footer from '../components/Footer';
 
 import '../styles/produtos.css';
 
-const REGISTROS_HISTORICO = [
-    {
-        id: 1,
-        produto: 'Seringa Descartável',
-        tipo: 'Entrada',
-        quantidade: '100 un.',
-        data: '20/03/2026'
-    },
-    {
-        id: 2,
-        produto: 'Álcool 70%',
-        tipo: 'Saída',
-        quantidade: '12 un.',
-        data: '10/01/2026'
-    },
-    {
-        id: 3,
-        produto: 'Máscara Cirúrgica',
-        tipo: 'Entrada',
-        quantidade: '200 un.',
-        data: '27/02/2026'
-    }
-];
+const API_BASE_URL = (
+    import.meta.env.VITE_API_URL || 'http://localhost:8080'
+).replace(/\/$/, '');
 
-function dataParaNumero(dataStr) {
-    if (!dataStr) return 0;
-    const [dia, mes, ano] = dataStr.split('/').map(Number);
-    return new Date(ano, (mes || 1) - 1, dia || 1).getTime();
+const API_URL = `${API_BASE_URL}/historico`;
+
+// Recupera o ID do gestor associado ao usuário logado
+function obterGestorId() {
+    const gestorLogado = sessionStorage.getItem('gestorLogado');
+    const funcionarioLogado = sessionStorage.getItem('funcionarioLogado');
+
+    if (gestorLogado) {
+        const gestor = JSON.parse(gestorLogado);
+        if (gestor.id) return gestor.id;
+    }
+
+    if (funcionarioLogado) {
+        const funcionario = JSON.parse(funcionarioLogado);
+
+        return (
+            funcionario.gestorId ||
+            funcionario.idGestor ||
+            funcionario.gestor?.id ||
+            funcionario.gestor?.idGestor ||
+            null
+        );
+    }
+
+    return null;
+}
+
+// Converte a data ISO recebida do backend para data brasileira
+function formatarData(data) {
+    if (!data) return '-';
+
+    const [dataParte, horaParte] = data.split('T');
+    const [ano, mes, dia] = dataParte.split('-');
+
+    if (!ano || !mes || !dia) return data;
+
+    const dataFormatada = `${dia}/${mes}/${ano}`;
+
+    if (!horaParte) return dataFormatada;
+
+    return `${dataFormatada} ${horaParte.substring(0, 5)}`;
+}
+
+// Converte a data ISO em número para ordenação
+function dataParaNumero(data) {
+    if (!data) return 0;
+
+    return new Date(data).getTime() || 0;
 }
 
 export default function Historico() {
-    const [ordemData, setOrdemData] = useState('desc'); // 'desc' = mais recente | 'asc' = mais antigo
+    const [registros, setRegistros] = useState([]);
+    const [ordemData, setOrdemData] = useState('desc');
     const [abrirFiltroData, setAbrirFiltroData] = useState(false);
-    const [dataSelecionada, setDataSelecionada] = useState(''); // YYYY-MM-DD
+    const [dataSelecionada, setDataSelecionada] = useState('');
+    const [carregando, setCarregando] = useState(true);
+    const [erro, setErro] = useState('');
+
     const menuFiltroRef = useRef(null);
 
-    // Fecha o menuzinho se clicar fora dele
+    // Busca o histórico do gestor logado
+    useEffect(() => {
+        let ativo = true;
+
+        async function buscarHistorico() {
+            try {
+                setCarregando(true);
+                setErro('');
+
+                const gestorId = obterGestorId();
+
+                if (!gestorId) {
+                    throw new Error(
+                        'Não foi possível identificar o gestor associado ao usuário logado.'
+                    );
+                }
+
+                const resposta = await fetch(
+                    `${API_URL}?gestorId=${encodeURIComponent(gestorId)}`
+                );
+
+                if (!resposta.ok) {
+                    const mensagem = await resposta.text();
+
+                    throw new Error(
+                        mensagem || `Erro ao buscar histórico (${resposta.status}).`
+                    );
+                }
+
+                const dados = await resposta.json();
+
+                if (!Array.isArray(dados)) {
+                    throw new Error('O formato dos dados recebidos é inválido.');
+                }
+
+                if (ativo) {
+                    setRegistros(dados);
+                }
+            } catch (error) {
+                if (ativo) {
+                    setErro(error.message || 'Não foi possível carregar o histórico.');
+                }
+            } finally {
+                if (ativo) {
+                    setCarregando(false);
+                }
+            }
+        }
+
+        buscarHistorico();
+
+        return () => {
+            ativo = false;
+        };
+    }, []);
+
+    // Fecha o menu quando clicar fora dele
     useEffect(() => {
         const handleClickFora = (e) => {
-            if (menuFiltroRef.current && !menuFiltroRef.current.contains(e.target)) {
+            if (
+                menuFiltroRef.current &&
+                !menuFiltroRef.current.contains(e.target)
+            ) {
                 setAbrirFiltroData(false);
             }
         };
+
         document.addEventListener('mousedown', handleClickFora);
-        return () => document.removeEventListener('mousedown', handleClickFora);
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickFora);
+        };
     }, []);
 
+    // Filtra e ordena os registros recebidos da API
     const itensExibidos = useMemo(() => {
-        const filtrados = REGISTROS_HISTORICO.filter((item) => {
+        const filtrados = registros.filter((item) => {
             if (!dataSelecionada) return true;
-            const [ano, mes, dia] = dataSelecionada.split('-');
-            return item.data === `${dia}/${mes}/${ano}`;
+
+            // Compara somente o dia, sem considerar o horário
+            return item.data?.substring(0, 10) === dataSelecionada;
         });
 
         return [...filtrados].sort((a, b) => {
-            const diff = dataParaNumero(a.data) - dataParaNumero(b.data);
+            const diff =
+                dataParaNumero(a.data) - dataParaNumero(b.data);
+
             return ordemData === 'desc' ? -diff : diff;
         });
-    }, [ordemData, dataSelecionada]);
+    }, [registros, ordemData, dataSelecionada]);
 
     const colunasHistorico = (
         <>
@@ -76,7 +171,10 @@ export default function Historico() {
     );
 
     const acoesHistorico = (
-        <div ref={menuFiltroRef} style={{ position: 'relative', display: 'inline-block' }}>
+        <div
+            ref={menuFiltroRef}
+            style={{ position: 'relative', display: 'inline-block' }}
+        >
             <i
                 className="bi bi-filter"
                 style={{ cursor: 'pointer' }}
@@ -98,7 +196,9 @@ export default function Historico() {
                     <button
                         type="button"
                         className={`btn btn-sm text-start py-1 px-2 ${
-                            ordemData === 'desc' ? 'btn-success text-white' : 'btn-light text-dark'
+                            ordemData === 'desc'
+                                ? 'btn-success text-white'
+                                : 'btn-light text-dark'
                         }`}
                         style={{ fontSize: '0.78rem' }}
                         onClick={() => {
@@ -112,7 +212,9 @@ export default function Historico() {
                     <button
                         type="button"
                         className={`btn btn-sm text-start py-1 px-2 ${
-                            ordemData === 'asc' ? 'btn-success text-white' : 'btn-light text-dark'
+                            ordemData === 'asc'
+                                ? 'btn-success text-white'
+                                : 'btn-light text-dark'
                         }`}
                         style={{ fontSize: '0.78rem' }}
                         onClick={() => {
@@ -132,6 +234,7 @@ export default function Historico() {
                             onChange={(e) => setDataSelecionada(e.target.value)}
                             title="Buscar por data"
                         />
+
                         {dataSelecionada && (
                             <button
                                 type="button"
@@ -159,16 +262,30 @@ export default function Historico() {
 
                     <Header />
 
-                    <TableCard colunas={colunasHistorico} acoes={acoesHistorico}>
-
-                        {itensExibidos.length === 0 ? (
+                    <TableCard
+                        colunas={colunasHistorico}
+                        acoes={acoesHistorico}
+                    >
+                        {carregando ? (
                             <div className="p-4 text-center text-muted">
-                                Nenhum registro encontrado para a data selecionada.
+                                Carregando histórico...
+                            </div>
+                        ) : erro ? (
+                            <div className="p-4 text-center text-danger">
+                                {erro}
+                            </div>
+                        ) : itensExibidos.length === 0 ? (
+                            <div className="p-4 text-center text-muted">
+                                Nenhum registro encontrado
+                                {dataSelecionada
+                                    ? ' para a data selecionada.'
+                                    : '.'}
                             </div>
                         ) : (
                             itensExibidos.map((item, index) => {
                                 const isEntrada = item.tipo === 'Entrada';
-                                const ultimoItem = index === itensExibidos.length - 1;
+                                const ultimoItem =
+                                    index === itensExibidos.length - 1;
 
                                 return (
                                     <div
@@ -178,11 +295,16 @@ export default function Historico() {
                                         }`}
                                     >
                                         <div className="col-12 col-md-4 mb-2 mb-md-0">
-                                            <h6 className="mb-0 fw-bold text-dark">{item.produto}</h6>
+                                            <h6 className="mb-0 fw-bold text-dark">
+                                                {item.produto}
+                                            </h6>
                                         </div>
+
                                         <div
                                             className={`col-4 col-md-3 fw-medium ${
-                                                isEntrada ? 'text-success' : 'text-danger'
+                                                isEntrada
+                                                    ? 'text-success'
+                                                    : 'text-danger'
                                             }`}
                                         >
                                             <i
@@ -194,25 +316,25 @@ export default function Historico() {
                                             ></i>{' '}
                                             {item.tipo}
                                         </div>
+
                                         <div className="col-4 col-md-2 text-center fw-bold">
-                                            {item.quantidade}
+                                            {item.quantidade} {item.unidade || ''}
                                         </div>
+
                                         <div className="col-4 col-md-3 text-end text-muted">
                                             <i className="bi bi-calendar3 me-1 d-inline d-md-none"></i>{' '}
-                                            {item.data}
+                                            {formatarData(item.data)}
                                         </div>
                                     </div>
                                 );
                             })
                         )}
-
                     </TableCard>
 
                 </div>
             </div>
 
             <Footer />
-
         </div>
     );
 }
