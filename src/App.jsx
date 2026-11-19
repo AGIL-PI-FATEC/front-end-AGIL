@@ -1,4 +1,6 @@
+
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Cadastro from './pages/Cadastro';
@@ -9,6 +11,10 @@ import Historico from './pages/Historico';
 import Notificacoes from './pages/Notificacoes';
 import Funcionarios from './pages/Funcionarios';
 import Ajuda from './pages/Ajuda';
+import Termos from './pages/Termos';
+import PerfilGestor from './pages/PerfilGestor';
+import GerenciarFuncionarios from './pages/GerenciarFuncionarios';
+import PerfilFuncionario from './pages/PerfilFuncionario';
 
 function App() {
   return (
@@ -21,10 +27,12 @@ function App() {
         {/* Autenticação */}
         <Route path="/login" element={<Login />} />
         <Route path="/cadastro" element={<Cadastro />} />
+        <Route path="/termos" element={<Termos />} />
 
         {/* Dashboard e Tela Inicial do Gestor */}
         <Route path="/inicio-gestor" element={<PaginaInicial />} />
         <Route path="/inicio" element={<PaginaInicial />} />
+        <Route path="/perfil-gestor" element={<PerfilGestor />} />
 
         {/* Funcionalidades */}
         <Route path="/produtos" element={<Produtos />} />
@@ -32,6 +40,8 @@ function App() {
         <Route path="/historico" element={<Historico />} />
         <Route path="/notificacoes" element={<Notificacoes />} />
         <Route path="/funcionarios" element={<Funcionarios />} />
+        <Route path="/perfil-funcionario" element={<PerfilFuncionario />} />
+        <Route path="/gerenciar-funcionarios" element={<GerenciarFuncionarios />} />
         <Route path="/ajuda" element={<Ajuda />} />
       </Routes>
     </Router>

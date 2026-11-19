@@ -1,0 +1,211 @@
+/* Fundo da página */
+.perfil-pagina {
+    min-height: 100%;
+    padding: 20px 25px 35px;
+    background: linear-gradient(
+        135deg,
+        #f0f7f4,
+        #e7f2ed
+    );
+    box-sizing: border-box;
+}
+/* Container principal */
+.perfil-container {
+    width: 100%;
+    max-width: 900px;
+    margin: 35px auto;
+    padding: 35px;
+    background-color: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+    box-sizing: border-box;
+}
+
+/* Título */
+.perfil-container h2 {
+    color: #087653;
+    font-size: 26px;
+    font-weight: 700;
+    margin: 0 0 8px;
+}
+
+.perfil-container h2::after {
+    content: "";
+    display: block;
+    width: 55px;
+    height: 4px;
+    margin-top: 12px;
+    background: linear-gradient(90deg, #087653, #3caf96);
+    border-radius: 5px;
+}
+
+/* Organização dos campos */
+.perfil-conteudo {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px;
+    margin-top: 30px;
+}
+
+.perfil-campo {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    min-width: 0;
+}
+
+.perfil-campo label {
+    color: #263b35;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.perfil-campo input {
+    width: 100%;
+    height: 45px;
+    padding: 0 14px;
+    border: 1px solid #d8e3df;
+    border-radius: 8px;
+    background-color: #ffffff;
+    color: #263b35;
+    font-size: 14px;
+    box-sizing: border-box;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.perfil-campo input:focus {
+    border-color: #168b6c;
+    box-shadow: 0 0 0 3px rgba(22, 139, 108, 0.12);
+}
+
+/* Campos somente leitura */
+.perfil-campo p {
+    min-height: 45px;
+    margin: 0;
+    padding: 13px 14px;
+    border: 1px solid #e5ece9;
+    border-radius: 8px;
+    background-color: #f5f8f7;
+    color: #65736e;
+    font-size: 14px;
+    box-sizing: border-box;
+}
+
+/* Botão salvar */
+.btn-salvar-perfil {
+    margin-top: 30px;
+    padding: 13px 24px;
+    border: none;
+    border-radius: 8px;
+    background: linear-gradient(90deg, #087653, #269c7e);
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.2s;
+}
+
+.btn-salvar-perfil:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+/* Botão excluir */
+.btn-excluir-perfil {
+    margin: 0 auto 35px;
+    display: block;
+    padding: 12px 22px;
+    border: 1px solid #dc3545;
+    border-radius: 8px;
+    background-color: #ffffff;
+    color: #dc3545;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.btn-excluir-perfil:hover {
+    background-color: #dc3545;
+    color: #ffffff;
+}
+
+.btn-excluir-perfil:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Responsividade para tablets e celulares */
+@media (max-width: 768px) {
+    .perfil-container {
+        margin: 20px auto;
+        padding: 25px 20px;
+    }
+
+    .perfil-container h2 {
+        font-size: 23px;
+    }
+
+    .perfil-conteudo {
+        grid-template-columns: 1fr;
+        gap: 19px;
+        margin-top: 25px;
+    }
+
+    .btn-salvar-perfil {
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .perfil-voltar {
+    width: 100%;
+    justify-content: center;
+}
+    .perfil-container {
+        margin: 15px auto;
+        padding: 22px 16px;
+        border-radius: 12px;
+    }
+
+    .perfil-container h2 {
+        font-size: 21px;
+    }
+
+    .perfil-campo input,
+    .perfil-campo p {
+        font-size: 13px;
+    }
+
+    .btn-excluir-perfil {
+        width: calc(100% - 30px);
+    }
+}
+
+/* Botão voltar */
+.perfil-voltar {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin: 5px 0 10px;
+    padding: 10px 16px;
+
+    border: 1px solid #d8e3df;
+    border-radius: 8px;
+
+    background-color: #ffffff;
+    color: #087653;
+
+    font-size: 14px;
+    font-weight: 600;
+
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.perfil-voltar:hover {
+    background-color: #087653;
+    color: #ffffff;
+    border-color: #087653;
+}
