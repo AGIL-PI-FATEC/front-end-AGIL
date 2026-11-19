@@ -178,3 +178,74 @@ body {
 
     .search-box { width: 100% !important; }
 }
+
+
+/* ÁREA DOS FILTROS DE NOTIFICAÇÕES */
+
+.filtros-notificacao {
+    background-color: #f1f5f4;
+    padding: 9px 14px;
+    min-height: 0;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+/* BOTÕES DOS FILTROS */
+.btn-filtro-notificacao {
+    border: 1px solid transparent;
+    background-color: transparent;
+    color: #64748b;
+    border-radius: 7px;
+    padding: 5px 12px;
+    font-size: 13px;
+    transition: 0.2s ease;
+}
+
+.btn-filtro-notificacao:hover {
+    background-color: #e2f0ea;
+    color: #334155;
+}
+
+.btn-filtro-notificacao.ativo {
+    background-color: #334155;
+    color: #fff;
+    border-color: #334155;
+}
+
+.contador-notificacao {
+    background-color: #dc3545;
+    color: #fff;
+    border-radius: 20px;
+    padding: 2px 6px;
+    font-size: 10px;
+    margin-left: 6px;
+}
+
+
+/* BOTÃO MARCAR COMO LIDA */
+.btn-marcar-lida {
+    background-color: #eff6ff;
+    color: #2563eb;
+    border: 1px solid #bfdbfe;
+    border-radius: 7px;
+    padding: 6px 11px;
+    font-size: 12px;
+    font-weight: 600;
+    transition: 0.2s ease;
+}
+
+.btn-marcar-lida:hover {
+    background-color: #2563eb;
+    color: #fff;
+    border-color: #2563eb;
+}
+
+/* NOTIFICAÇÃO JÁ LIDA */
+.notificacao-lida {
+    background-color: #fafafa;
+}
+
+.texto-lida {
+    color: #16a34a;
+    font-size: 12px;
+    font-weight: 600;
+}
