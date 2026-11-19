@@ -32,13 +32,15 @@ export default function PaginaInicial() {
     return (
         <div className="d-flex flex-column min-vh-100">
             {/* Wrapper principal Flex: Lado a lado no Desktop, coluna no Mobile */}
-            <div className="d-flex flex-column flex-md-row flex-grow-1">
+            <div className="d-flex flex-column flex-md-row p-3 gap-3 flex-grow-1">
+            {/* <div className="d-flex flex-column flex-md-row flex-grow-1"> */}
                 
                 {/* 1. Sidebar */}
                 <Sidebar active="inicio" />
 
                 {/* 2. Área de Conteúdo Principal */}
-                <main className="flex-grow-1 p-3 p-md-4 d-flex flex-column">
+                <div className="flex-grow-1 w-100">
+                {/* <main className="flex-grow-1 p-3 p-md-4 d-flex flex-column"> */}
                     <Header />
 
                     <div className="container-fluid flex-grow-1 p-0">
@@ -80,7 +82,7 @@ export default function PaginaInicial() {
                             </div>
                         </div>
                     </div>
-                </main>
+                </div>
             </div>
 
             {/* Rodapé da Aplicação */}

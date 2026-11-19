@@ -56,12 +56,6 @@ export default function Login() {
               />
             </div>
 
-            <p style={{ width: '100%', textAlign: 'left', marginTop: '-5px', marginBottom: '15px' }}>
-              <Link to="/esqueceu-senha" style={{ color: '#4a5568', fontSize: '13px' }}>
-                Esqueceu a senha?
-              </Link>
-            </p>
-
             <button type="submit" className="btn-login">
               Entrar
             </button>

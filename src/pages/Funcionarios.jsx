@@ -37,7 +37,7 @@ export default function Funcionarios() {
 
                     <div className="colaborators-card mb-3">
                         <h4 className="d-flex justify-content-between align-items-center fw-bold mb-0 p-2">
-                            Colaboradores
+                            Funcionários
                             <div className="d-flex gap-3 fs-5">
                                 <i className="bi bi-pencil-square" style={{ cursor: 'pointer' }} title="Editar"></i>
                                 <i className="bi bi-x-square" style={{ cursor: 'pointer' }} title="Excluir"></i>
