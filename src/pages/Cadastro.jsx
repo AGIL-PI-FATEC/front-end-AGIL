@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import logo from '../assets/Logo_semfundo.png';
 import '../styles/cad.css';
@@ -16,6 +16,19 @@ export default function Cadastro() {
     confirmarSenha: '',
     termos: false,
   });
+
+  useEffect(() => {
+    const termosAceitos = sessionStorage.getItem('agil_termos_aceitos');
+
+    if (termosAceitos === 'true') {
+      setFormData((prev) => ({
+        ...prev,
+        termos: true,
+      }));
+
+      sessionStorage.removeItem('agil_termos_aceitos');
+    }
+  }, []);
 
   const [carregando, setCarregando] = useState(false);
 
@@ -196,11 +209,18 @@ export default function Cadastro() {
                   onChange={handleChange}
                   required
                 />
+
                 <label
                   className="form-check-label text-secondary"
                   htmlFor="termos"
                 >
-                  Aceito os termos
+                  Li e aceito os{' '}
+                  <Link
+                    to="/termos"
+                    className="text-success fw-bold text-decoration-none"
+                  >
+                    Termos de Uso e Política de Privacidade
+                  </Link>
                 </label>
               </div>
 
