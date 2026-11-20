@@ -1,16 +1,11 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
-import TableCard from '../components/TableCard';
 import Footer from '../components/Footer';
 
 import '../styles/produtos.css';
-
-import luvasImg from '../assets/luvas.jpg';
-import seringaImg from '../assets/seringa.jpg';
-import mascaraImg from '../assets/mascara.jpg';
 
 const API_URL = `${(import.meta.env.VITE_API_URL || 'http://localhost:8080').replace(/\/$/, '')}/produtos`;
 const STORAGE_KEY = 'agil_produtos_imagens';
@@ -42,27 +37,6 @@ function obterGestorId() {
     }
 }
 
-// Mantido caso outras partes da aplicação ainda leiam imagens locais antigas
-function lerImagensLocais() {
-    try {
-        const salvas = localStorage.getItem(STORAGE_KEY);
-        return salvas ? JSON.parse(salvas) : {};
-    } catch (erro) {
-        console.error('Erro ao ler imagens locais:', erro);
-        return {};
-    }
-}
-
-function excluirImagemLocal(id) {
-    try {
-        const imagens = lerImagensLocais();
-        delete imagens[id];
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(imagens));
-    } catch (erro) {
-        console.error('Erro ao remover imagem local:', erro);
-    }
-}
-
 async function obterErroResposta(resposta) {
     const erro = await resposta.text();
     console.error('Erro retornado pelo backend:', erro);
@@ -72,17 +46,6 @@ async function obterErroResposta(resposta) {
 export default function EditarProdutos() {
     const location = useLocation();
     const navigate = useNavigate();
-
-    // Identificando o tipo de usuário logado
-    const funcionario = JSON.parse(
-        sessionStorage.getItem('funcionarioLogado') || 'null'
-    );
-
-    const gestor = JSON.parse(
-        sessionStorage.getItem('gestorLogado') || 'null'
-    );
-
-    const ehFuncionario = !!funcionario;
 
     const produtoParam = location.state?.produtoSelecionado || null;
 
@@ -216,11 +179,12 @@ export default function EditarProdutos() {
     };
 
     const estiloInput = {
-        backgroundColor: '#F2F3F5',
-        border: 'none',
+        backgroundColor: '#f5f8f7',
+        border: '1px solid #d8e3df',
         borderRadius: '8px',
-        padding: '10px 12px',
-        fontSize: '0.9rem'
+        padding: '10px 14px',
+        fontSize: '0.9rem',
+        color: '#263b35'
     };
 
     return (
@@ -232,7 +196,7 @@ export default function EditarProdutos() {
                     <Header />
 
                     {mensagem.texto && (
-                        <div className={`alert alert-${mensagem.tipo} alert-dismissible fade show rounded-3 mt-3`}>
+                        <div className={`alert alert-${mensagem.tipo === 'success' ? 'success' : 'danger'} alert-dismissible fade show rounded-3 mt-3 shadow-sm`}>
                             {mensagem.texto}
                             <button
                                 type="button"
@@ -242,75 +206,83 @@ export default function EditarProdutos() {
                         </div>
                     )}
 
-                    <div className="row justify-content-center mt-4">
-                        <div className="col-lg-6 col-md-8">
+                    {/* Centralização e largura maior no desktop (col-lg-9 ou col-xl-8) com altura mais compacta */}
+                    <div className="row justify-content-center mt-4 mb-4">
+                        <div className="col-lg-9 col-xl-8">
                             <div
-                                className="card shadow-sm"
+                                className="card shadow-sm bg-white"
                                 style={{
-                                    borderRadius: '12px',
-                                    border: '1px solid #E5E7EB',
+                                    borderRadius: '16px',
+                                    border: '1px solid #d1ded9', // Frame com cor levemente destacada
                                     overflow: 'hidden'
                                 }}
                             >
+                                {/* Cabeçalho verde padrão */}
                                 <div
                                     style={{
-                                        backgroundColor: '#2563EB',
+                                        backgroundColor: '#087653',
                                         color: '#FFFFFF',
-                                        padding: '12px 16px',
+                                        padding: '14px 20px',
                                         fontWeight: '600',
                                         fontSize: '0.95rem',
                                         display: 'flex',
                                         alignItems: 'center',
-                                        gap: '8px'
+                                        gap: '10px'
                                     }}
                                 >
-                                    <i className="bi bi-pencil-fill"></i>
+                                    <i className="bi bi-pencil-square fs-5"></i>
                                     Editar Produto {produtoParam?.nome ? `(${produtoParam.nome})` : ''}
                                 </div>
 
-                                <div className="card-body p-4">
+                                {/* Corpo do card mais compacto/distribuído em grid horizontal no desktop */}
+                                <div className="card-body p-4 p-md-4">
                                     <form onSubmit={handleSalvarEdicao}>
-                                        <div className="mb-3">
-                                            <label className="form-label small fw-semibold text-secondary">
-                                                Nome do Produto
-                                            </label>
-                                            <input
-                                                type="text"
-                                                className="form-control"
-                                                style={estiloInput}
-                                                placeholder="Ex: Luvas Cirúrgicas"
-                                                value={nome}
-                                                onChange={(e) => setNome(e.target.value)}
-                                                required
-                                            />
+                                        
+                                        {/* Linha 1: Nome e Preço lado a lado para diminuir a altura */}
+                                        <div className="row g-3 mb-3">
+                                            <div className="col-md-7">
+                                                <label className="form-label small fw-semibold" style={{ color: '#263b35' }}>
+                                                    Nome do Produto
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    className="form-control shadow-none"
+                                                    style={estiloInput}
+                                                    placeholder="Ex: Luvas Cirúrgicas"
+                                                    value={nome}
+                                                    onChange={(e) => setNome(e.target.value)}
+                                                    required
+                                                />
+                                            </div>
+
+                                            <div className="col-md-5">
+                                                <label className="form-label small fw-semibold" style={{ color: '#263b35' }}>
+                                                    Preço do Produto (R$)
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    step="0.01"
+                                                    min="0"
+                                                    className="form-control shadow-none"
+                                                    style={estiloInput}
+                                                    placeholder="Ex: 89.90"
+                                                    value={preco}
+                                                    onChange={(e) => setPreco(e.target.value)}
+                                                    required
+                                                />
+                                            </div>
                                         </div>
 
-                                        <div className="mb-3">
-                                            <label className="form-label small fw-semibold text-secondary">
-                                                Preço do Produto (R$)
-                                            </label>
-                                            <input
-                                                type="number"
-                                                step="0.01"
-                                                min="0"
-                                                className="form-control"
-                                                style={estiloInput}
-                                                placeholder="Ex: 89.90"
-                                                value={preco}
-                                                onChange={(e) => setPreco(e.target.value)}
-                                                required
-                                            />
-                                        </div>
-
-                                        <div className="row g-2 mb-3">
-                                            <div className="col-6">
-                                                <label className="file-label form-label small fw-semibold text-secondary">
-                                                    Quantidade de Caixas (Estoque)
+                                        {/* Linha 2: Estoque, Qtd por Caixa e Foto */}
+                                        <div className="row g-3 mb-4">
+                                            <div className="col-md-4">
+                                                <label className="form-label small fw-semibold" style={{ color: '#263b35' }}>
+                                                    Qtd de Caixas (Estoque)
                                                 </label>
                                                 <input
                                                     type="number"
                                                     min="0"
-                                                    className="form-control"
+                                                    className="form-control shadow-none"
                                                     style={estiloInput}
                                                     placeholder="Ex: 12"
                                                     value={estoqueCaixas}
@@ -319,14 +291,14 @@ export default function EditarProdutos() {
                                                 />
                                             </div>
 
-                                            <div className="col-6">
-                                                <label className="form-label small fw-semibold text-secondary">
+                                            <div className="col-md-4">
+                                                <label className="form-label small fw-semibold" style={{ color: '#263b35' }}>
                                                     Quantidade por Caixa
                                                 </label>
                                                 <input
                                                     type="number"
                                                     min="1"
-                                                    className="form-control"
+                                                    className="form-control shadow-none"
                                                     style={estiloInput}
                                                     placeholder="Ex: 100"
                                                     value={qtdPorCaixa}
@@ -334,42 +306,46 @@ export default function EditarProdutos() {
                                                     required
                                                 />
                                             </div>
+
+                                            <div className="col-md-4">
+                                                <label className="form-label small fw-semibold" style={{ color: '#263b35' }}>
+                                                    Foto do Produto
+                                                </label>
+                                                <div className="d-flex align-items-center gap-2">
+                                                    <input
+                                                        ref={inputArquivoRef}
+                                                        type="file"
+                                                        accept="image/*"
+                                                        className="form-control shadow-none"
+                                                        style={{ ...estiloInput, padding: '7px 10px', fontSize: '0.85rem' }}
+                                                        onChange={handleImagemChange}
+                                                    />
+                                                    {imagem && (
+                                                        <img
+                                                            src={imagem}
+                                                            alt="Prévia"
+                                                            className="rounded shadow-sm border flex-shrink-0"
+                                                            width="38"
+                                                            height="38"
+                                                            style={{ objectFit: 'cover' }}
+                                                        />
+                                                    )}
+                                                </div>
+                                            </div>
                                         </div>
 
-                                        <div className="mb-4">
-                                            <label className="form-label small fw-semibold text-secondary">
-                                                Foto do Produto
-                                            </label>
-                                            <input
-                                                ref={inputArquivoRef}
-                                                type="file"
-                                                accept="image/*"
-                                                className="form-control"
-                                                style={estiloInput}
-                                                onChange={handleImagemChange}
-                                            />
-
-                                            {imagem && (
-                                                <img
-                                                    src={imagem}
-                                                    alt="Pré-visualização do produto"
-                                                    className="mt-2 rounded shadow-sm"
-                                                    width="60"
-                                                    height="60"
-                                                    style={{ objectFit: 'cover' }}
-                                                />
-                                            )}
-                                        </div>
-
-                                        <div className="d-flex gap-2">
+                                        {/* Botões de ação */}
+                                        <div className="d-flex gap-3 pt-2">
                                             <button
                                                 type="submit"
-                                                className="btn w-100 text-white fw-semibold"
+                                                className="btn w-100 text-white fw-semibold shadow-sm"
                                                 disabled={carregando}
                                                 style={{
-                                                    backgroundColor: '#2563EB',
+                                                    background: 'linear-gradient(90deg, #087653, #269c7e)',
                                                     borderRadius: '8px',
-                                                    padding: '10px'
+                                                    padding: '11px',
+                                                    border: 'none',
+                                                    transition: 'opacity 0.2s'
                                                 }}
                                             >
                                                 {carregando ? 'Salvando...' : 'Salvar Alterações'}
@@ -378,7 +354,11 @@ export default function EditarProdutos() {
                                             <Link
                                                 to="/produtos"
                                                 className="btn btn-light border fw-semibold px-4 d-flex align-items-center justify-content-center text-decoration-none"
-                                                style={{ borderRadius: '8px' }}
+                                                style={{ 
+                                                    borderRadius: '8px', 
+                                                    borderColor: '#d8e3df',
+                                                    color: '#263b35' 
+                                                }}
                                             >
                                                 Cancelar
                                             </Link>

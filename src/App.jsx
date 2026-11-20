@@ -15,6 +15,7 @@ import Termos from './pages/Termos';
 import PerfilGestor from './pages/PerfilGestor';
 import GerenciarFuncionarios from './pages/GerenciarFuncionarios';
 import PerfilFuncionario from './pages/PerfilFuncionario';
+import CadastrarProduto from './pages/CadastrarProduto';
 
 function App() {
   return (
@@ -37,6 +38,7 @@ function App() {
         {/* Funcionalidades */}
         <Route path="/produtos" element={<Produtos />} />
         <Route path="/editar-produtos" element={<EditarProdutos />} />
+        <Route path="/cadastrar-produto" element={<CadastrarProduto />} />
         <Route path="/historico" element={<Historico />} />
         <Route path="/notificacoes" element={<Notificacoes />} />
         <Route path="/funcionarios" element={<Funcionarios />} />

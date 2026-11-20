@@ -1,10 +1,11 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
 import TableCard from '../components/TableCard';
 import Footer from '../components/Footer';
+
 import '../styles/produtos.css';
 
 import luvasImg from '../assets/luvas.jpg';
@@ -14,40 +15,44 @@ import mascaraImg from '../assets/mascara.jpg';
 const API_URL = 'http://localhost:8080/produtos';
 const STORAGE_KEY = 'agil_produtos';
 
-const PRODUTOS_FALLBACK = [
-    { id: 1, nome: 'Luvas Cirúrgicas', preco: 89.90, qtdPorCaixa: 100, estoqueCaixas: 12 },
-    { id: 2, nome: 'Seringa Descartável', preco: 45.50, qtdPorCaixa: 50, estoqueCaixas: 20 },
-    { id: 3, nome: 'Máscara Cirúrgica', preco: 32.00, qtdPorCaixa: 50, estoqueCaixas: 18 }
-];
-
-function lerProdutosSalvos() {
-    try {
-        const salvos = localStorage.getItem(STORAGE_KEY);
-
-        if (salvos) {
-            const parsed = JSON.parse(salvos);
-            if (Array.isArray(parsed)) return parsed;
-        }
-    } catch {
-        // ignora erro de leitura
-    }
-
-    return PRODUTOS_FALLBACK;
-}
-
 export default function Produtos() {
     const navigate = useNavigate();
+
+    // Identifica se é o gestor logado
+    const tipoUsuario = sessionStorage.getItem('tipoUsuario');
+    const gestor = JSON.parse(sessionStorage.getItem('gestorLogado') || 'null');
+    const funcionario = JSON.parse(sessionStorage.getItem('funcionarioLogado') || 'null');
+
+    const gestorId = gestor?.id ?? funcionario?.gestorId ?? null;
+
+    // Cada gestor terá seu próprio armazenamento local
+    const storageKey = `${STORAGE_KEY}_${gestorId ?? 'sem-gestor'}`;
+
+    // É gestor se o tipo for 'gestor' ou se houver um gestor logado sem funcionário ativo
+    const ehGestor = tipoUsuario === 'gestor' || (!!gestor && !funcionario);
 
     const [produtos, setProdutos] = useState([]);
     const [carregando, setCarregando] = useState(true);
     const [avisoApi, setAvisoApi] = useState('');
     const [termoBusca, setTermoBusca] = useState('');
+    const [mensagem, setMensagem] = useState('');
+    const [excluindoId, setExcluindoId] = useState(null);
 
     const carregarProdutos = useCallback(async () => {
+        if (!gestorId) {
+            setProdutos([]);
+            setAvisoApi('Não foi possível identificar o gestor responsável.');
+            setCarregando(false);
+            return;
+        }
+
         setCarregando(true);
+        setAvisoApi('');
 
         try {
-            const resposta = await fetch(API_URL);
+            const resposta = await fetch(
+                `${API_URL}?gestorId=${gestorId}`
+            );
 
             if (!resposta.ok) {
                 throw new Error(`HTTP ${resposta.status}`);
@@ -58,89 +63,144 @@ export default function Produtos() {
 
             setProdutos(lista);
             setAvisoApi('');
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(lista));
+
+            localStorage.setItem(storageKey, JSON.stringify(lista));
 
         } catch (erro) {
             console.error('Erro ao buscar produtos da API:', erro);
 
-            const listaLocal = lerProdutosSalvos();
+            // Recupera somente os produtos salvos para este gestor
+            let listaLocal = [];
 
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(listaLocal));
+            try {
+                const salvos = localStorage.getItem(storageKey);
+
+                if (salvos) {
+                    const parsed = JSON.parse(salvos);
+
+                    if (Array.isArray(parsed)) {
+                        listaLocal = parsed;
+                    }
+                }
+            } catch {
+                listaLocal = [];
+            }
+
             setProdutos(listaLocal);
 
             setAvisoApi(
-                'Não foi possível conectar à API em localhost:8080. Exibindo dados locais/salvos.'
+                'Não foi possível conectar à API. Exibindo os dados salvos localmente.'
             );
 
         } finally {
             setCarregando(false);
         }
-    }, []);
+    }, [gestorId, storageKey]);
 
     useEffect(() => {
         carregarProdutos();
-
         window.addEventListener('focus', carregarProdutos);
-
-        return () => {
-            window.removeEventListener('focus', carregarProdutos);
-        };
+        return () => window.removeEventListener('focus', carregarProdutos);
     }, [carregarProdutos]);
 
     const produtosFiltrados = produtos.filter((prod) =>
-        (prod.nome || '')
-            .toLowerCase()
-            .includes(termoBusca.trim().toLowerCase())
+        (prod.nome || '').toLowerCase().includes(termoBusca.trim().toLowerCase())
     );
 
     const obterImagemProduto = (prod) => {
         if (prod.imagem) return prod.imagem;
-
         const n = prod.nome ? prod.nome.toLowerCase() : '';
-
         if (n.includes('luva')) return luvasImg;
         if (n.includes('seringa')) return seringaImg;
         if (n.includes('máscara') || n.includes('mascara')) return mascaraImg;
-
         return null;
     };
 
+    // Função de exclusão restrita ao Gestor
+    const handleExcluirProduto = async (produto) => {
+        if (!ehGestor || !gestorId) return;
+
+        const confirmar = window.confirm(`Tem certeza que deseja excluir o produto "${produto.nome}"?`);
+        if (!confirmar) return;
+
+        setMensagem('');
+        setExcluindoId(produto.id);
+
+        try {
+            const resposta = await fetch(
+                `${API_URL}/${produto.id}?gestorId=${gestorId}`,
+                {
+                    method: 'DELETE'
+                }
+            );
+            if (!resposta.ok) {
+                throw new Error(`Não foi possível excluir o produto. HTTP ${resposta.status}`);
+            }
+
+            setProdutos((listaAtual) => {
+                const novaLista = listaAtual.filter((item) => item.id !== produto.id);
+                localStorage.setItem(storageKey, JSON.stringify(novaLista));
+                return novaLista;
+            });
+
+            setMensagem('Produto excluído com sucesso!');
+        } catch (erro) {
+            console.error('Erro ao excluir produto:', erro);
+            setMensagem('Não foi possível excluir o produto. Tente novamente.');
+        } finally {
+            setExcluindoId(null);
+        }
+    };
+
+    // Cabeçalho da tabela com o botão integrado na barra verde para o Gestor
     const colunasProdutos = (
-        <>
-            <div className="col-md-6">Produto</div>
-            <div className="col-md-3">Preço</div>
-            <div className="col-md-3">Estoque</div>
-        </>
+        <div className="d-flex justify-content-between align-items-center w-100 pe-2">
+            <div className="row w-100 m-0">
+                <div className="col-md-5">Produto</div>
+                <div className="col-md-3">Preço</div>
+                <div className="col-md-4">Estoque</div>
+            </div>
+            {ehGestor && (
+                <button
+                    type="button"
+                    className="btn btn-light btn-sm fw-semibold text-success text-nowrap px-3 shadow-sm"
+                    onClick={() => navigate('/cadastrar-produto')}
+                    style={{ border: 'none', borderRadius: '6px' }}
+                >
+                    <i className="bi bi-plus-lg me-1"></i>
+                    Adicionar produto
+                </button>
+            )}
+        </div>
     );
 
     return (
         <div className="min-vh-100 d-flex flex-column">
             <div className="d-flex flex-column flex-md-row p-3 gap-3 flex-grow-1">
-
                 <Sidebar active="produtos" />
 
                 <div className="flex-grow-1 w-100">
-
-                    <Header
-                        valorBusca={termoBusca}
-                        onBuscar={setTermoBusca}
-                    />
+                    <Header valorBusca={termoBusca} onBuscar={setTermoBusca} />
 
                     {avisoApi && (
-                        <div className="alert alert-warning rounded-3 py-2 small">
+                        <div className="alert alert-warning rounded-3 py-2 small mt-3">
                             {avisoApi}
                         </div>
                     )}
 
+                    {mensagem && (
+                        <div className="alert alert-info rounded-3 py-2 small mt-3">
+                            {mensagem}
+                        </div>
+                    )}
+
+                    <div className="mt-3"></div>
+
                     <TableCard colunas={colunasProdutos}>
                         {carregando ? (
-                            <div className="p-4 text-center text-muted">
-                                Carregando produtos...
-                            </div>
+                            <div className="p-4 text-center text-muted">Carregando produtos...</div>
                         ) : produtosFiltrados.length === 0 ? (
-                            <div className="p-4 text-center text-muted">
-                                Nenhum produto encontrado para essa busca.
-                            </div>
+                            <div className="p-4 text-center text-muted">Nenhum produto encontrado para essa busca.</div>
                         ) : (
                             produtosFiltrados.map((prod, index) => {
                                 const imgSrc = obterImagemProduto(prod);
@@ -152,12 +212,10 @@ export default function Produtos() {
                                     <div
                                         key={prod.id ?? index}
                                         className={`row align-items-center p-3 m-0 ${
-                                            index < produtosFiltrados.length - 1
-                                                ? 'border-bottom'
-                                                : ''
+                                            index < produtosFiltrados.length - 1 ? 'border-bottom' : ''
                                         }`}
                                     >
-                                        <div className="col-12 col-md-6 d-flex align-items-center gap-3 mb-2 mb-md-0">
+                                        <div className="col-12 col-md-5 d-flex align-items-center gap-3 mb-2 mb-md-0">
                                             {imgSrc ? (
                                                 <img
                                                     src={imgSrc}
@@ -181,11 +239,8 @@ export default function Produtos() {
                                                     <i className="bi bi-box-seam fs-5"></i>
                                                 </div>
                                             )}
-
                                             <div>
-                                                <h6 className="mb-0 fw-bold text-dark">
-                                                    {prod.nome}
-                                                </h6>
+                                                <h6 className="mb-0 fw-bold text-dark">{prod.nome}</h6>
                                             </div>
                                         </div>
 
@@ -193,55 +248,64 @@ export default function Produtos() {
                                             <h6 className="mb-0 fw-bold">
                                                 R$ {Number(prod.preco || 0).toFixed(2).replace('.', ',')}
                                             </h6>
-
-                                            <small className="text-secondary">
-                                                Caixa com {qtdPorCaixa}
-                                            </small>
+                                            <small className="text-secondary">Caixa com {qtdPorCaixa}</small>
                                         </div>
 
                                         <div
-                                            className={`col-6 col-md-3 fw-medium d-flex align-items-center justify-content-between ${
+                                            className={`col-6 col-md-4 fw-medium d-flex align-items-center justify-content-between ${
                                                 emEstoque ? 'text-success' : 'text-danger'
                                             }`}
                                         >
                                             <span>
                                                 <i className="bi bi-circle-fill small me-1"></i>
-
                                                 <span className="d-none d-sm-inline">
-                                                    {emEstoque
-                                                        ? `${estoqueCaixas} ${estoqueCaixas === 1 ? 'Caixa' : 'Caixas'}`
-                                                        : 'Sem estoque'}
+                                                    {emEstoque ? `${estoqueCaixas} ${estoqueCaixas === 1 ? 'Caixa' : 'Caixas'}` : 'Sem estoque'}
                                                 </span>
-
                                                 <span className="d-inline d-sm-none">
                                                     {emEstoque ? 'Em estoque' : 'Sem estoque'}
                                                 </span>
                                             </span>
 
-                                            <button
-                                                type="button"
-                                                className="btn btn-sm btn-outline-secondary"
-                                                title="Editar este produto"
-                                                onClick={() =>
-                                                    navigate('/editar-produtos', {
-                                                        state: {
-                                                            produtoSelecionado: prod
-                                                        }
-                                                    })
-                                                }
-                                            >
-                                                <i className="bi bi-pencil"></i>
-                                            </button>
+                                            <div className="d-flex gap-2">
+                                                {/* Botão de Editar (disponível para ambos) */}
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-sm btn-outline-secondary"
+                                                    title="Editar este produto"
+                                                    onClick={() =>
+                                                        navigate('/editar-produtos', {
+                                                            state: { produtoSelecionado: prod }
+                                                        })
+                                                    }
+                                                >
+                                                    <i className="bi bi-pencil"></i>
+                                                </button>
+
+                                                {/* Botão de Excluir visível APENAS para o Gestor */}
+                                                {ehGestor && (
+                                                    <button
+                                                        type="button"
+                                                        className="btn btn-sm btn-outline-danger"
+                                                        title="Excluir este produto"
+                                                        disabled={excluindoId === prod.id}
+                                                        onClick={() => handleExcluirProduto(prod)}
+                                                    >
+                                                        {excluindoId === prod.id ? (
+                                                            <span className="spinner-border spinner-border-sm" role="status"></span>
+                                                        ) : (
+                                                            <i className="bi bi-trash"></i>
+                                                        )}
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 );
                             })
                         )}
                     </TableCard>
-
                 </div>
             </div>
-
             <Footer />
         </div>
     );
