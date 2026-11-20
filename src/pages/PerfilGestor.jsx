@@ -69,6 +69,13 @@ export default function PerfilGestor() {
         }
     };
 
+    // Realiza o logout do gestor
+    const handleSair = () => {
+        sessionStorage.removeItem('gestorLogado');
+        sessionStorage.removeItem('tipoUsuario');
+        navigate('/login');
+    };
+
     // Exclui a conta do gestor
     const handleExcluir = async () => {
         const confirmar = window.confirm(
@@ -92,6 +99,7 @@ export default function PerfilGestor() {
             }
 
             sessionStorage.removeItem('gestorLogado');
+            sessionStorage.removeItem('tipoUsuario');
 
             navigate('/login');
 
@@ -123,19 +131,32 @@ export default function PerfilGestor() {
                     onSalvar={handleSalvar}
                 />
 
-                {mensagem && <p>{mensagem}</p>}
-                {erro && <p>{erro}</p>}
+                {mensagem && <p className="text-success text-center mt-2">{mensagem}</p>}
+                {erro && <p className="text-danger text-center mt-2">{erro}</p>}
 
-                <button
-                    type="button"
-                    className="btn-excluir-perfil"
-                    onClick={handleExcluir}
-                    disabled={carregando}
-                >
-                    Excluir minha conta
-                </button>
+                {/* Container para alinhar os botões de Sair e Excluir conta lado a lado */}
+                <div className="d-flex justify-content-center align-items-center gap-3 my-4 flex-wrap">
+                    <button
+                        type="button"
+                        className="btn btn-outline-secondary px-4 py-2 fw-semibold"
+                        onClick={handleSair}
+                        style={{ borderRadius: '8px' }}
+                    >
+                        <i className="bi bi-box-arrow-right me-2"></i>
+                        Sair
+                    </button>
 
-                {carregando && <p>Processando...</p>}
+                    <button
+                        type="button"
+                        className="btn-excluir-perfil m-0"
+                        onClick={handleExcluir}
+                        disabled={carregando}
+                    >
+                        Excluir minha conta
+                    </button>
+                </div>
+
+                {carregando && <p className="text-center text-muted">Processando...</p>}
 
             </div>
 

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import Perfil from '../components/Perfil';
@@ -17,6 +16,13 @@ export default function PerfilFuncionario() {
     }
 
     const funcionario = JSON.parse(dadosFuncionario);
+
+    // Realiza o logout do funcionário
+    const handleSair = () => {
+        sessionStorage.removeItem('funcionarioLogado');
+        sessionStorage.removeItem('tipoUsuario');
+        navigate('/login');
+    };
 
     return (
         <>
@@ -48,6 +54,19 @@ export default function PerfilFuncionario() {
                     usuario={funcionario}
                     tipo="funcionario"
                 />
+
+                {/* Botão de Sair centralizado */}
+                <div className="d-flex justify-content-center my-4">
+                    <button
+                        type="button"
+                        className="btn btn-outline-secondary px-5 py-2 fw-semibold shadow-sm"
+                        onClick={handleSair}
+                        style={{ borderRadius: '8px' }}
+                    >
+                        <i className="bi bi-box-arrow-right me-2"></i>
+                        Sair
+                    </button>
+                </div>
 
             </div>
 
