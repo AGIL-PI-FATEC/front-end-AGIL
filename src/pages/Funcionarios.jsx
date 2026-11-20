@@ -143,7 +143,7 @@ export default function Funcionarios() {
                                     <div className="d-flex align-items-center gap-3">
 
                                         <img
-                                            src={func.fotoUrl || imagemPerfil}
+                                            src={func.foto || imagemPerfil}
                                             alt={`Foto de ${func.nome}`}
                                             className="rounded-circle object-fit-cover"
                                             width="50"

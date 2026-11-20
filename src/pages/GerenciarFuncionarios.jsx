@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -28,7 +27,7 @@ export default function GerenciarFuncionarios() {
         nome: '',
         email: '',
         cargo: '',
-        fotoUrl: '',
+        foto: '',
         senha: '',
         confirmacaoSenha: ''
     });
@@ -71,13 +70,38 @@ export default function GerenciarFuncionarios() {
         });
     }
 
+    // Adiciona a função para selecionar a foto
+    function handleFotoChange(event) {
+        const arquivo = event.target.files[0];
+
+        if (!arquivo) return;
+
+        if (!arquivo.type.startsWith('image/')) {
+            setErro('Selecione um arquivo de imagem válido.');
+            return;
+        }
+
+        const leitor = new FileReader();
+
+        leitor.onloadend = () => {
+            setFormulario({
+                ...formulario,
+                foto: leitor.result
+            });
+
+            setErro('');
+        };
+
+        leitor.readAsDataURL(arquivo);
+    }
+
     // Limpa o formulário
     function limparFormulario() {
         setFormulario({
             nome: '',
             email: '',
             cargo: '',
-            fotoUrl: '',
+            foto: '',
             senha: '',
             confirmacaoSenha: ''
         });
@@ -111,7 +135,7 @@ export default function GerenciarFuncionarios() {
             nome: formulario.nome,
             email: formulario.email,
             cargo: formulario.cargo,
-            fotoUrl: formulario.fotoUrl || null
+            foto: formulario.foto || null
         };
 
         // Na edição, envia os dados de atualização
@@ -168,7 +192,7 @@ export default function GerenciarFuncionarios() {
             nome: funcionario.nome || '',
             email: funcionario.email || '',
             cargo: funcionario.cargo || '',
-            fotoUrl: funcionario.fotoUrl || '',
+            foto: funcionario.foto || '',
             senha: '',
             confirmacaoSenha: ''
         });
@@ -315,17 +339,26 @@ export default function GerenciarFuncionarios() {
                             </div>
 
                             <div className="mb-3">
-                                <label className="form-label">
-                                    Foto (URL)
-                                </label>
+                                <label className="form-label">Foto do funcionário</label>
+
                                 <input
-                                    type="text"
-                                    name="fotoUrl"
+                                    type="file"
                                     className="form-control"
-                                    placeholder="https://..."
-                                    value={formulario.fotoUrl}
-                                    onChange={handleChange}
+                                    accept="image/*"
+                                    onChange={handleFotoChange}
                                 />
+
+                                {formulario.foto && (
+                                    <div className="mt-3">
+                                        <img
+                                            src={formulario.foto}
+                                            alt="Prévia da foto"
+                                            width="100"
+                                            height="100"
+                                            className="rounded-circle object-fit-cover"
+                                        />
+                                    </div>
+                                )}
                             </div>
 
                             {!editandoId && (
@@ -414,7 +447,7 @@ export default function GerenciarFuncionarios() {
                                 <div className="d-flex align-items-center gap-3">
 
                                     <img
-                                        src={func.fotoUrl || imagemPerfil}
+                                        src={func.foto || imagemPerfil}
                                         alt={`Foto de ${func.nome}`}
                                         width="45"
                                         height="45"
