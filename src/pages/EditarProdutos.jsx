@@ -138,7 +138,7 @@ export default function EditarProdutos() {
         try {
             const gestorId = obterGestorId();
 
-            const resposta = await fetch(`${API_URL}/${produtoParam.id}`, {
+            const resposta = await fetch(`${API_URL}/${produtoParam.id}?gestorId=${gestorId}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json'

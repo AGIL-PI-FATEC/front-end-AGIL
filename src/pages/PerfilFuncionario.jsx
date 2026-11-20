@@ -38,7 +38,7 @@ export default function PerfilFuncionario() {
 
                 <div className="text-center mb-4">
                     <img
-                        src={funcionario.fotoUrl || imagemPerfil}
+                        src={funcionario.foto || imagemPerfil}
                         alt={`Foto de ${funcionario.nome}`}
                         width="110"
                         height="110"
