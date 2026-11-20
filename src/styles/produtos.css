@@ -197,3 +197,38 @@ body {
 .tabela-header {
     background: linear-gradient(90deg, #0b7051 0%, #40b094 100%) !important;
 }
+/* Banner de boas-vindas da página inicial */
+.inicio-banner {
+    background: linear-gradient(110deg, #0b7051 0%, #40b094 100%);
+    color: white;
+    padding: 48px;
+    border-radius: 20px;
+    margin-bottom: 30px;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.08);
+}
+
+.inicio-banner h1 {
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.inicio-banner p {
+    font-size: 1.2rem;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+/* Ajuste para dispositivos menores */
+@media (max-width: 768px) {
+    .inicio-banner {
+        padding: 30px 24px;
+    }
+
+    .inicio-banner h1 {
+        font-size: 1.7rem;
+    }
+
+    .inicio-banner p {
+        font-size: 1rem;
+    }
+}

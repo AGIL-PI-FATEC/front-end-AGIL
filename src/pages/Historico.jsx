@@ -67,6 +67,9 @@ export default function Historico() {
     const [dataSelecionada, setDataSelecionada] = useState('');
     const [carregando, setCarregando] = useState(true);
     const [erro, setErro] = useState('');
+    
+    // Estado do termo de busca adicionado
+    const [termoBusca, setTermoBusca] = useState('');
 
     const menuFiltroRef = useRef(null);
 
@@ -146,11 +149,27 @@ export default function Historico() {
 
     // Filtra e ordena os registros recebidos da API
     const itensExibidos = useMemo(() => {
-        const filtrados = registros.filter((item) => {
-            if (!dataSelecionada) return true;
+        const busca = termoBusca.trim().toLowerCase();
 
-            // Compara somente o dia, sem considerar o horário
-            return item.data?.substring(0, 10) === dataSelecionada;
+        const filtrados = registros.filter((item) => {
+            const correspondeData =
+                !dataSelecionada ||
+                item.data?.substring(0, 10) === dataSelecionada;
+
+            const textoRegistro = [
+                item.produto,
+                item.tipo,
+                item.quantidade,
+                item.unidade,
+                formatarData(item.data)
+            ]
+                .join(' ')
+                .toLowerCase();
+
+            return (
+                correspondeData &&
+                textoRegistro.includes(busca)
+            );
         });
 
         return [...filtrados].sort((a, b) => {
@@ -159,7 +178,7 @@ export default function Historico() {
 
             return ordemData === 'desc' ? -diff : diff;
         });
-    }, [registros, ordemData, dataSelecionada]);
+    }, [registros, ordemData, dataSelecionada, termoBusca]);
 
     const colunasHistorico = (
         <>
@@ -260,7 +279,10 @@ export default function Historico() {
 
                 <div className="flex-grow-1 w-100">
 
-                    <Header />
+                    <Header
+                        valorBusca={termoBusca}
+                        onBuscar={setTermoBusca}
+                    />
 
                     <TableCard
                         colunas={colunasHistorico}

@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 
 export default function Ajuda() {
+    // Estado do termo de busca adicionado
+    const [termoBusca, setTermoBusca] = useState('');
 
     // Lista dinâmica de perguntas frequentes
     const faqs = [
@@ -39,6 +41,22 @@ export default function Ajuda() {
         }
     ];
 
+    // Filtra as FAQs com base no termo digitado no Header (procurando na pergunta ou na resposta)
+    const faqsFiltradas = useMemo(() => {
+        const busca = termoBusca.trim().toLowerCase();
+
+        return faqs.filter((faq) => {
+            const textoFaq = [
+                faq.pergunta,
+                faq.resposta
+            ]
+                .join(' ')
+                .toLowerCase();
+
+            return textoFaq.includes(busca);
+        });
+    }, [faqs, termoBusca]);
+
     return (
         <div className="min-vh-100 d-flex flex-column">
             <div className="d-flex flex-column flex-md-row p-3 gap-3 flex-grow-1">
@@ -47,36 +65,45 @@ export default function Ajuda() {
 
                 <div className="flex-grow-1 w-100">
 
-                    <Header />
+                    <Header
+                        valorBusca={termoBusca}
+                        onBuscar={setTermoBusca}
+                    />
 
                     <div className="faq-banner mb-4">
                         <h2 className="fw-bold">Perguntas Frequentes</h2>
                     </div>
 
                     <div className="bg-white p-4 rounded-4 shadow-sm">
-                        <div className="accordion accordion-flush" id="accordionFAQ">
+                        {faqsFiltradas.length === 0 ? (
+                            <p className="text-muted text-center py-4 mb-0">
+                                Nenhuma pergunta encontrada para essa busca.
+                            </p>
+                        ) : (
+                            <div className="accordion accordion-flush" id="accordionFAQ">
 
-                            {faqs.map((faq) => (
-                                <div className="accordion-item" key={faq.id}>
-                                    <h2 className="accordion-header">
-                                        <button
-                                            className="accordion-button collapsed py-4"
-                                            type="button"
-                                            data-bs-toggle="collapse"
-                                            data-bs-target={`#${faq.id}`}
-                                        >
-                                            {faq.pergunta}
-                                        </button>
-                                    </h2>
-                                    <div id={faq.id} className="accordion-collapse collapse" data-bs-parent="#accordionFAQ">
-                                        <div className="accordion-body text-muted">
-                                            {faq.resposta}
+                                {faqsFiltradas.map((faq) => (
+                                    <div className="accordion-item" key={faq.id}>
+                                        <h2 className="accordion-header">
+                                            <button
+                                                className="accordion-button collapsed py-4"
+                                                type="button"
+                                                data-bs-toggle="collapse"
+                                                data-bs-target={`#${faq.id}`}
+                                            >
+                                                {faq.pergunta}
+                                            </button>
+                                        </h2>
+                                        <div id={faq.id} className="accordion-collapse collapse" data-bs-parent="#accordionFAQ">
+                                            <div className="accordion-body text-muted">
+                                                {faq.resposta}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            ))}
+                                ))}
 
-                        </div>
+                            </div>
+                        )}
                     </div>
 
                 </div>

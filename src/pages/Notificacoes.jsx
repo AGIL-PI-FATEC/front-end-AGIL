@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
@@ -9,6 +9,9 @@ export default function Notificacoes() {
     const [filtro, setFiltro] = useState('TODAS');
     const [carregando, setCarregando] = useState(true);
     const [erro, setErro] = useState('');
+    
+    // Estado do termo de busca adicionado
+    const [termoBusca, setTermoBusca] = useState('');
 
     const gestor = JSON.parse(sessionStorage.getItem('gestorLogado'));
     const gestorId = gestor?.id;
@@ -83,11 +86,28 @@ export default function Notificacoes() {
         return 'bg-secondary';
     }
 
-    const notificacoesFiltradas = listaNotificacoes.filter((item) => {
-        if (filtro === 'LIDAS') return item.lida;
-        if (filtro === 'NAO_LIDAS') return !item.lida;
-        return true;
-    });
+    // Filtra por status (Todas, Não lidas, Lidas) e também pelo termo de busca digitado no Header
+    const notificacoesFiltradas = useMemo(() => {
+        const busca = termoBusca.trim().toLowerCase();
+
+        return listaNotificacoes.filter((item) => {
+            const correspondeFiltroStatus =
+                filtro === 'LIDAS' ? item.lida :
+                filtro === 'NAO_LIDAS' ? !item.lida : true;
+
+            const textoNotificacao = [
+                item.titulo,
+                item.mensagem,
+                item.tipo
+            ]
+                .join(' ')
+                .toLowerCase();
+
+            const correspondeBusca = textoNotificacao.includes(busca);
+
+            return correspondeFiltroStatus && correspondeBusca;
+        });
+    }, [listaNotificacoes, filtro, termoBusca]);
 
     const quantidadeNaoLidas = listaNotificacoes.filter(
         (item) => !item.lida
@@ -100,7 +120,10 @@ export default function Notificacoes() {
                 <Sidebar active="notificacao" />
 
                 <div className="flex-grow-1 w-100">
-                    <Header />
+                    <Header
+                        valorBusca={termoBusca}
+                        onBuscar={setTermoBusca}
+                    />
 
                     <div className="notificacao_banner d-flex justify-content-between align-items-center mb-3 shadow-sm mt-3">
                         <h4 className="fw-bold mb-0 p-2">Notificações</h4>
@@ -158,11 +181,13 @@ export default function Notificacoes() {
 
                         {!carregando && !erro && notificacoesFiltradas.length === 0 && (
                             <p className="text-muted text-center p-4 mb-0">
-                                {filtro === 'LIDAS'
-                                    ? 'Nenhuma notificação lida.'
-                                    : filtro === 'NAO_LIDAS'
-                                        ? 'Você não possui notificações não lidas.'
-                                        : 'Nenhuma notificação no momento.'}
+                                {termoBusca
+                                    ? 'Nenhuma notificação encontrada para essa busca.'
+                                    : filtro === 'LIDAS'
+                                        ? 'Nenhuma notificação lida.'
+                                        : filtro === 'NAO_LIDAS'
+                                            ? 'Você não possui notificações não lidas.'
+                                            : 'Nenhuma notificação no momento.'}
                             </p>
                         )}
 

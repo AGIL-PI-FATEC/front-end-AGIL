@@ -37,6 +37,9 @@ export default function Produtos() {
     const [produtos, setProdutos] = useState([]);
     const [carregando, setCarregando] = useState(true);
     const [avisoApi, setAvisoApi] = useState('');
+    
+    // Correção: o useState foi movido para dentro do componente
+    const [termoBusca, setTermoBusca] = useState('');
 
     const carregarProdutos = useCallback(async () => {
         setCarregando(true);
@@ -69,6 +72,12 @@ export default function Produtos() {
             window.removeEventListener('focus', carregarProdutos);
         };
     }, [carregarProdutos]);
+
+    const produtosFiltrados = produtos.filter((prod) =>
+        (prod.nome || '')
+            .toLowerCase()
+            .includes(termoBusca.trim().toLowerCase())
+    );
 
     const obterImagemProduto = (prod) => {
         if (prod.imagem) return prod.imagem;
@@ -105,7 +114,10 @@ export default function Produtos() {
 
                 <div className="flex-grow-1 w-100">
 
-                    <Header />
+                    <Header
+                        valorBusca={termoBusca}
+                        onBuscar={setTermoBusca}
+                    />
 
                     {avisoApi && (
                         <div className="alert alert-warning rounded-3 py-2 small">
@@ -118,12 +130,12 @@ export default function Produtos() {
                             <div className="p-4 text-center text-muted">
                                 Carregando produtos...
                             </div>
-                        ) : produtos.length === 0 ? (
+                        ) : produtosFiltrados.length === 0 ? (
                             <div className="p-4 text-center text-muted">
-                                Nenhum produto cadastrado no momento.
+                                Nenhum produto encontrado para essa busca.
                             </div>
                         ) : (
-                            produtos.map((prod, index) => {
+                            produtosFiltrados.map((prod, index) => {
                                 const imgSrc = obterImagemProduto(prod);
                                 const estoqueCaixas = Number(prod.estoqueCaixas ?? 0);
                                 const qtdPorCaixa = Number(prod.qtdPorCaixa ?? 0);
@@ -133,7 +145,7 @@ export default function Produtos() {
                                     <div
                                         key={prod.id ?? index}
                                         className={`row align-items-center p-3 m-0 ${
-                                            index < produtos.length - 1 ? 'border-bottom' : ''
+                                            index < produtosFiltrados.length - 1 ? 'border-bottom' : ''
                                         }`}
                                     >
                                         <div className="col-12 col-md-6 d-flex align-items-center gap-3 mb-2 mb-md-0">

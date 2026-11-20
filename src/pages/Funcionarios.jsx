@@ -1,5 +1,4 @@
-
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import Sidebar from '../components/Sidebar';
@@ -29,6 +28,9 @@ export default function Funcionarios() {
     const [listaFuncionarios, setListaFuncionarios] = useState([]);
     const [carregando, setCarregando] = useState(true);
     const [erro, setErro] = useState('');
+    
+    // Estado do termo de busca adicionado
+    const [termoBusca, setTermoBusca] = useState('');
 
     //busca os funcionários vinculados ao gestor
     useEffect(() => {
@@ -61,6 +63,23 @@ export default function Funcionarios() {
         buscarFuncionarios();
     }, [API_URL, gestorId]);
 
+    // Filtra os funcionários com base no termo digitado no Header (nome, cargo ou email)
+    const funcionariosFiltrados = useMemo(() => {
+        const busca = termoBusca.trim().toLowerCase();
+
+        return listaFuncionarios.filter((func) => {
+            const textoFuncionario = [
+                func.nome,
+                func.cargo,
+                func.email
+            ]
+                .join(' ')
+                .toLowerCase();
+
+            return textoFuncionario.includes(busca);
+        });
+    }, [listaFuncionarios, termoBusca]);
+
     return (
         <div className="min-vh-100 d-flex flex-column">
             <div className="d-flex flex-column flex-md-row p-3 gap-3 flex-grow-1">
@@ -69,7 +88,10 @@ export default function Funcionarios() {
 
                 <div className="flex-grow-1 w-100">
 
-                    <Header />
+                    <Header
+                        valorBusca={termoBusca}
+                        onBuscar={setTermoBusca}
+                    />
 
                     <div className="colaborators-card mb-3">
                         <h4 className="d-flex justify-content-between align-items-center fw-bold mb-0 p-2">
@@ -105,13 +127,15 @@ export default function Funcionarios() {
                                 </p>
                             )}
 
-                            {!carregando && !erro && listaFuncionarios.length === 0 && (
+                            {!carregando && !erro && funcionariosFiltrados.length === 0 && (
                                 <p className="text-center text-muted">
-                                    Nenhum funcionário cadastrado.
+                                    {termoBusca
+                                        ? 'Nenhum funcionário encontrado para essa busca.'
+                                        : 'Nenhum funcionário cadastrado.'}
                                 </p>
                             )}
 
-                            {!carregando && !erro && listaFuncionarios.map((func) => (
+                            {!carregando && !erro && funcionariosFiltrados.map((func) => (
                                 <div
                                     key={func.id}
                                     className="d-flex align-items-center justify-content-between py-3 border-bottom item-colaborador"

@@ -12,37 +12,74 @@ import luvasImg from '../assets/luvas.jpg';
 import seringaImg from '../assets/seringa.jpg';
 import mascaraImg from '../assets/mascara.jpg';
 
-const API_URL = 'http://localhost:8080/produtos';
-const STORAGE_KEY = 'agil_produtos';
+const API_URL = `${(import.meta.env.VITE_API_URL || 'http://localhost:8080').replace(/\/$/, '')}/produtos`;
+const STORAGE_KEY = 'agil_produtos_imagens';
 
-const PRODUTOS_INICIAIS = [
-    { id: 1, nome: 'Luvas Cirúrgicas', preco: 89.90, qtdPorCaixa: 100, estoqueCaixas: 12, embalagem: 'Caixa' },
-    { id: 2, nome: 'Seringa Descartável', preco: 45.50, qtdPorCaixa: 50, estoqueCaixas: 20, embalagem: 'Pacote' },
-    { id: 3, nome: 'Máscara Cirúrgica', preco: 32.00, qtdPorCaixa: 50, estoqueCaixas: 18, embalagem: 'Caixa' }
-];
-
-function lerProdutosLocais() {
+// Recupera o ID do gestor que realizou o login.
+function obterGestorId() {
     try {
-        const salvos = localStorage.getItem(STORAGE_KEY);
+        const gestorSalvo = sessionStorage.getItem('gestorLogado');
 
-        if (salvos) {
-            const parsed = JSON.parse(salvos);
-            if (Array.isArray(parsed)) return parsed;
+        if (!gestorSalvo) {
+            throw new Error('Nenhum gestor está logado. Faça login novamente.');
         }
-    } catch (erro) {
-        console.error('Erro ao ler produtos locais:', erro);
-    }
 
-    return [];
+        const gestor = JSON.parse(gestorSalvo);
+
+        if (!gestor?.id) {
+            throw new Error('Não foi possível identificar o gestor logado.');
+        }
+
+        return gestor.id;
+    } catch (erro) {
+        if (erro instanceof SyntaxError) {
+            throw new Error('Os dados do gestor estão inválidos. Faça login novamente.');
+        }
+
+        throw erro;
+    }
 }
 
-function salvarProdutosLocais(lista) {
+// O armazenamento local guarda somente as imagens dos produtos.
+function lerImagensLocais() {
     try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(lista));
+        const salvas = localStorage.getItem(STORAGE_KEY);
+        return salvas ? JSON.parse(salvas) : {};
     } catch (erro) {
-        console.error('Erro ao salvar produtos no navegador:', erro);
-        alert('Não foi possível salvar os dados localmente. Verifique se a imagem escolhida é muito grande.');
+        console.error('Erro ao ler imagens locais:', erro);
+        return {};
     }
+}
+
+function salvarImagemLocal(id, imagem) {
+    if (id === undefined || id === null || !imagem) return;
+
+    try {
+        const imagens = lerImagensLocais();
+        imagens[id] = imagem;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(imagens));
+    } catch (erro) {
+        console.error('Erro ao salvar imagem local:', erro);
+        alert('O produto foi salvo no servidor, mas não foi possível guardar sua imagem no navegador.');
+    }
+}
+
+function excluirImagemLocal(id) {
+    try {
+        const imagens = lerImagensLocais();
+        delete imagens[id];
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(imagens));
+    } catch (erro) {
+        console.error('Erro ao remover imagem local:', erro);
+    }
+}
+
+async function obterErroResposta(resposta) {
+    const erro = await resposta.text();
+
+    console.error('Erro retornado pelo backend:', erro);
+
+    return erro || `HTTP ${resposta.status}`;
 }
 
 function FormularioProduto({
@@ -58,6 +95,8 @@ function FormularioProduto({
     const [estoqueCaixas, setEstoqueCaixas] = useState('');
     const [qtdPorCaixa, setQtdPorCaixa] = useState('');
     const [imagem, setImagem] = useState('');
+    const [carregando, setCarregando] = useState(false);
+
     const inputArquivoRef = useRef(null);
 
     useEffect(() => {
@@ -73,7 +112,10 @@ function FormularioProduto({
             setEstoqueCaixas('');
             setQtdPorCaixa('');
             setImagem('');
-            if (inputArquivoRef.current) inputArquivoRef.current.value = '';
+
+            if (inputArquivoRef.current) {
+                inputArquivoRef.current.value = '';
+            }
         }
     }, [produtoSelecionado, tipo]);
 
@@ -89,6 +131,7 @@ function FormularioProduto({
             img.onload = () => {
                 const tamanho = 300;
                 const canvas = document.createElement('canvas');
+
                 canvas.width = tamanho;
                 canvas.height = tamanho;
 
@@ -109,7 +152,7 @@ function FormularioProduto({
         reader.readAsDataURL(arquivo);
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
         const precoConvertido = parseFloat(preco);
@@ -120,28 +163,44 @@ function FormularioProduto({
             !nome.trim() ||
             Number.isNaN(precoConvertido) ||
             Number.isNaN(caixasConvertidas) ||
-            Number.isNaN(qtdCaixaConvertida)
+            Number.isNaN(qtdCaixaConvertida) ||
+            precoConvertido < 0 ||
+            caixasConvertidas < 0 ||
+            qtdCaixaConvertida < 1
         ) {
             return;
         }
 
-        onSalvar({
-            ...(produtoSelecionado?.id !== undefined && { id: produtoSelecionado.id }),
+        const dadosProduto = {
+            ...(produtoSelecionado?.id !== undefined && {
+                id: produtoSelecionado.id
+            }),
             nome: nome.trim(),
             preco: precoConvertido,
             estoqueCaixas: caixasConvertidas,
             qtdPorCaixa: qtdCaixaConvertida,
             embalagem: produtoSelecionado?.embalagem || 'Caixa',
             ...(imagem && { imagem })
-        });
+        };
 
-        if (tipo === 'adicionar') {
-            setNome('');
-            setPreco('');
-            setEstoqueCaixas('');
-            setQtdPorCaixa('');
-            setImagem('');
-            if (inputArquivoRef.current) inputArquivoRef.current.value = '';
+        setCarregando(true);
+
+        try {
+            const sucesso = await onSalvar(dadosProduto);
+
+            if (sucesso && tipo === 'adicionar') {
+                setNome('');
+                setPreco('');
+                setEstoqueCaixas('');
+                setQtdPorCaixa('');
+                setImagem('');
+
+                if (inputArquivoRef.current) {
+                    inputArquivoRef.current.value = '';
+                }
+            }
+        } finally {
+            setCarregando(false);
         }
     };
 
@@ -276,13 +335,14 @@ function FormularioProduto({
                         <button
                             type="submit"
                             className="btn w-100 text-white fw-semibold"
+                            disabled={carregando}
                             style={{
                                 backgroundColor: tipo === 'adicionar' ? '#1B7A56' : '#2563EB',
                                 borderRadius: '8px',
                                 padding: '10px'
                             }}
                         >
-                            {textoBotao}
+                            {carregando ? 'Salvando...' : textoBotao}
                         </button>
 
                         {tipo === 'editar' && produtoSelecionado && (
@@ -290,6 +350,7 @@ function FormularioProduto({
                                 type="button"
                                 className="btn btn-light border fw-semibold px-3"
                                 onClick={onCancelarEdicao}
+                                disabled={carregando}
                             >
                                 Cancelar
                             </button>
@@ -304,12 +365,14 @@ function FormularioProduto({
 function ExcluirProduto({ produtos, onExcluir, onErro }) {
     const [nomeParaExcluir, setNomeParaExcluir] = useState('');
     const [confirmando, setConfirmando] = useState(false);
+    const [carregando, setCarregando] = useState(false);
 
     const verificarProduto = (e) => {
         e.preventDefault();
 
         const produtoExiste = produtos.some(
-            (produto) => produto.nome.toLowerCase() === nomeParaExcluir.trim().toLowerCase()
+            (produto) =>
+                produto.nome?.toLowerCase() === nomeParaExcluir.trim().toLowerCase()
         );
 
         if (!produtoExiste) {
@@ -321,15 +384,26 @@ function ExcluirProduto({ produtos, onExcluir, onErro }) {
         setConfirmando(true);
     };
 
-    const confirmar = () => {
+    const confirmar = async () => {
         const produto = produtos.find(
-            (item) => item.nome.toLowerCase() === nomeParaExcluir.trim().toLowerCase()
+            (item) =>
+                item.nome?.toLowerCase() === nomeParaExcluir.trim().toLowerCase()
         );
 
-        if (produto) onExcluir(produto.id, produto.nome);
+        if (!produto) return;
 
-        setNomeParaExcluir('');
-        setConfirmando(false);
+        setCarregando(true);
+
+        try {
+            const sucesso = await onExcluir(produto.id, produto.nome);
+
+            if (sucesso) {
+                setNomeParaExcluir('');
+                setConfirmando(false);
+            }
+        } finally {
+            setCarregando(false);
+        }
     };
 
     return (
@@ -397,7 +471,10 @@ function ExcluirProduto({ produtos, onExcluir, onErro }) {
                 ) : (
                     <div
                         className="p-3 rounded"
-                        style={{ backgroundColor: '#FEF2F2', border: '1px solid #FECACA' }}
+                        style={{
+                            backgroundColor: '#FEF2F2',
+                            border: '1px solid #FECACA'
+                        }}
                     >
                         <p className="small mb-3 text-danger">
                             Confirmar exclusão de <strong>{nomeParaExcluir}</strong>?
@@ -408,14 +485,16 @@ function ExcluirProduto({ produtos, onExcluir, onErro }) {
                                 type="button"
                                 className="btn btn-danger btn-sm w-50 fw-semibold"
                                 onClick={confirmar}
+                                disabled={carregando}
                             >
-                                Confirmar
+                                {carregando ? 'Excluindo...' : 'Confirmar'}
                             </button>
 
                             <button
                                 type="button"
                                 className="btn btn-light btn-sm w-50 fw-semibold border"
                                 onClick={() => setConfirmando(false)}
+                                disabled={carregando}
                             >
                                 Cancelar
                             </button>
@@ -430,71 +509,60 @@ function ExcluirProduto({ produtos, onExcluir, onErro }) {
 export default function EditarProdutos() {
     const location = useLocation();
 
-    const [produtos, setProdutos] = useState(() => {
-        const salvos = lerProdutosLocais();
-        return salvos.length > 0 ? salvos : PRODUTOS_INICIAIS;
-    });
-
+    const [produtos, setProdutos] = useState([]);
     const [produtoEmEdicao, setProdutoEmEdicao] = useState(
         location.state?.produtoSelecionado || null
     );
-
     const [mensagem, setMensagem] = useState({ texto: '', tipo: '' });
-
-    const salvarListaLocal = (lista) => {
-        salvarProdutosLocais(lista);
-        setProdutos(lista);
-    };
+    const [carregandoProdutos, setCarregandoProdutos] = useState(true);
 
     const carregarProdutos = useCallback(async () => {
-        try {
-            const resposta = await fetch(API_URL);
+        const gestorId = obterGestorId();
 
-            if (!resposta.ok) {
-                throw new Error(`HTTP ${resposta.status}`);
-            }
+        const resposta = await fetch(
+            `${API_URL}?gestorId=${encodeURIComponent(gestorId)}`
+        );
 
-            const dados = await resposta.json();
-            const listaApi = Array.isArray(dados) ? dados : [];
-            const produtosLocais = lerProdutosLocais();
-
-            // Mantém as fotos locais, pois a API atual não recebe o arquivo/imagem.
-            const listaComImagens = listaApi.map((produto) => {
-                const produtoLocal = produtosLocais.find(
-                    (local) =>
-                        (local.id !== undefined && local.id === produto.id) ||
-                        local.nome?.toLowerCase() === produto.nome?.toLowerCase()
-                );
-
-                return {
-                    ...produto,
-                    ...(produtoLocal?.imagem && { imagem: produtoLocal.imagem }),
-                    embalagem: produto.embalagem || produtoLocal?.embalagem || 'Caixa'
-                };
-            });
-
-            setProdutos(listaComImagens);
-            salvarProdutosLocais(listaComImagens);
-            setMensagem((anterior) =>
-                anterior.tipo === 'danger' || anterior.tipo === 'warning'
-                    ? { texto: '', tipo: '' }
-                    : anterior
-            );
-        } catch (erro) {
-            console.error('Erro ao conectar com a API:', erro);
-
-            const listaLocal = lerProdutosLocais();
-            setProdutos(listaLocal.length > 0 ? listaLocal : PRODUTOS_INICIAIS);
-
-            setMensagem({
-                texto: 'API em localhost:8080 indisponível. Os dados exibidos vêm do armazenamento local do navegador.',
-                tipo: 'warning'
-            });
+        if (!resposta.ok) {
+            throw new Error(await obterErroResposta(resposta));
         }
+
+        const dados = await resposta.json();
+        const listaApi = Array.isArray(dados) ? dados : [];
+        const imagensLocais = lerImagensLocais();
+
+        const listaComImagens = listaApi.map((produto) => ({
+            ...produto,
+            imagem: imagensLocais[produto.id] || '',
+            embalagem: produto.embalagem || 'Caixa'
+        }));
+
+        setProdutos(listaComImagens);
+
+        return listaComImagens;
     }, []);
 
     useEffect(() => {
-        carregarProdutos();
+        const iniciar = async () => {
+            try {
+                setCarregandoProdutos(true);
+                await carregarProdutos();
+
+                setMensagem({ texto: '', tipo: '' });
+            } catch (erro) {
+                console.error('Erro ao carregar produtos:', erro);
+
+                setProdutos([]);
+                setMensagem({
+                    texto: `Não foi possível carregar os produtos do servidor: ${erro.message}`,
+                    tipo: 'danger'
+                });
+            } finally {
+                setCarregandoProdutos(false);
+            }
+        };
+
+        iniciar();
     }, [carregarProdutos]);
 
     useEffect(() => {
@@ -505,72 +573,74 @@ export default function EditarProdutos() {
 
     const handleAdicionar = async (novoProduto) => {
         try {
+            const gestorId = obterGestorId();
+
             const resposta = await fetch(API_URL, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json'
+                },
                 body: JSON.stringify({
                     nome: novoProduto.nome,
                     preco: novoProduto.preco,
                     estoqueCaixas: novoProduto.estoqueCaixas,
-                    qtdPorCaixa: novoProduto.qtdPorCaixa
+                    qtdPorCaixa: novoProduto.qtdPorCaixa,
+                    gestorId
                 })
             });
 
-            if (!resposta.ok) throw new Error(`HTTP ${resposta.status}`);
-
-            let produtoCriado = null;
-            try {
-                produtoCriado = await resposta.json();
-            } catch {
-                // A API pode responder sem corpo.
+            if (!resposta.ok) {
+                throw new Error(await obterErroResposta(resposta));
             }
 
-            const listaAtual = lerProdutosLocais();
-            const produtoComImagem = {
-                ...novoProduto,
-                ...(produtoCriado?.id !== undefined && { id: produtoCriado.id }),
-                ...(produtoCriado?.id === undefined && { id: Date.now() })
-            };
+            let produtoCriado = null;
 
-            const listaAtualizada = [
-                ...listaAtual.filter(
-                    (item) => item.nome?.toLowerCase() !== novoProduto.nome.toLowerCase()
-                ),
-                produtoComImagem
-            ];
+            const texto = await resposta.text();
 
-            salvarProdutosLocais(listaAtualizada);
-            await carregarProdutos();
+            if (texto) {
+                try {
+                    produtoCriado = JSON.parse(texto);
+                } catch {
+                    console.warn('O backend não retornou um JSON válido.');
+                }
+            }
 
-            // Garante que a imagem recém-selecionada continue aparecendo após a busca.
-            setProdutos((lista) =>
-                lista.map((item) =>
-                    item.id === produtoComImagem.id ||
-                    item.nome?.toLowerCase() === produtoComImagem.nome.toLowerCase()
-                        ? { ...item, imagem: novoProduto.imagem }
-                        : item
-                )
-            );
+            const listaAtualizada = await carregarProdutos();
+
+            const produtoEncontrado =
+                listaAtualizada.find((item) => item.id === produtoCriado?.id) ||
+                listaAtualizada.find(
+                    (item) =>
+                        item.nome?.toLowerCase() === novoProduto.nome.toLowerCase()
+                );
+
+            if (novoProduto.imagem && produtoEncontrado?.id !== undefined) {
+                salvarImagemLocal(produtoEncontrado.id, novoProduto.imagem);
+
+                setProdutos((lista) =>
+                    lista.map((item) =>
+                        item.id === produtoEncontrado.id
+                            ? { ...item, imagem: novoProduto.imagem }
+                            : item
+                    )
+                );
+            }
 
             setMensagem({
-                texto: `Produto "${novoProduto.nome}" adicionado com sucesso!`,
+                texto: `Produto "${novoProduto.nome}" cadastrado com sucesso!`,
                 tipo: 'success'
             });
+
+            return true;
         } catch (erro) {
             console.error('Erro ao cadastrar produto:', erro);
 
-            const atual = lerProdutosLocais();
-            const proximoId =
-                atual.reduce((maior, item) => Math.max(maior, Number(item.id) || 0), 0) + 1;
-
-            const criado = { ...novoProduto, id: novoProduto.id ?? proximoId };
-            const novaLista = [...atual, criado];
-
-            salvarListaLocal(novaLista);
             setMensagem({
-                texto: `Produto "${novoProduto.nome}" salvo localmente (API indisponível).`,
-                tipo: 'info'
+                texto: `Não foi possível cadastrar o produto: ${erro.message}`,
+                tipo: 'danger'
             });
+
+            return false;
         }
     };
 
@@ -580,32 +650,36 @@ export default function EditarProdutos() {
                 texto: 'Selecione um produto pelo botão de lápis na tabela antes de editar.',
                 tipo: 'warning'
             });
-            return;
+
+            return false;
         }
 
         try {
+            const gestorId = obterGestorId();
+
             const resposta = await fetch(`${API_URL}/${dadosEditados.id}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json'
+                },
                 body: JSON.stringify({
                     id: dadosEditados.id,
                     nome: dadosEditados.nome,
                     preco: dadosEditados.preco,
                     estoqueCaixas: dadosEditados.estoqueCaixas,
-                    qtdPorCaixa: dadosEditados.qtdPorCaixa
+                    qtdPorCaixa: dadosEditados.qtdPorCaixa,
+                    gestorId
                 })
             });
 
-            if (!resposta.ok) throw new Error(`HTTP ${resposta.status}`);
+            if (!resposta.ok) {
+                throw new Error(await obterErroResposta(resposta));
+            }
 
-            const locais = lerProdutosLocais();
-            const atualizadosLocais = locais.map((item) =>
-                item.id === dadosEditados.id
-                    ? { ...item, ...dadosEditados }
-                    : item
-            );
+            if (dadosEditados.imagem) {
+                salvarImagemLocal(dadosEditados.id, dadosEditados.imagem);
+            }
 
-            salvarProdutosLocais(atualizadosLocais);
             await carregarProdutos();
             setProdutoEmEdicao(null);
 
@@ -613,62 +687,57 @@ export default function EditarProdutos() {
                 texto: `Produto "${dadosEditados.nome}" atualizado com sucesso!`,
                 tipo: 'success'
             });
+
+            return true;
         } catch (erro) {
             console.error('Erro ao editar produto:', erro);
 
-            const atual = lerProdutosLocais().length > 0 ? lerProdutosLocais() : produtos;
-            const novaLista = atual.map((item) =>
-                item.id === dadosEditados.id
-                    ? { ...item, ...dadosEditados }
-                    : item
-            );
-
-            salvarListaLocal(novaLista);
-            setProdutoEmEdicao(null);
-
             setMensagem({
-                texto: `Produto "${dadosEditados.nome}" atualizado localmente (API indisponível).`,
-                tipo: 'info'
+                texto: `Não foi possível atualizar o produto: ${erro.message}`,
+                tipo: 'danger'
             });
+
+            return false;
         }
     };
 
     const handleExcluir = async (id, nome) => {
-        if (!window.confirm(`Tem certeza que deseja excluir "${nome}"?`)) return;
+        if (!window.confirm(`Tem certeza que deseja excluir "${nome}"?`)) {
+            return false;
+        }
 
         try {
             const resposta = await fetch(`${API_URL}/${id}`, {
                 method: 'DELETE'
             });
 
-            if (!resposta.ok) throw new Error(`HTTP ${resposta.status}`);
+            if (!resposta.ok) {
+                throw new Error(await obterErroResposta(resposta));
+            }
 
-            const locais = lerProdutosLocais();
-            const novaLista = locais.filter((item) => item.id !== id);
+            excluirImagemLocal(id);
 
-            salvarProdutosLocais(novaLista);
             await carregarProdutos();
 
-            if (produtoEmEdicao?.id === id) setProdutoEmEdicao(null);
+            if (produtoEmEdicao?.id === id) {
+                setProdutoEmEdicao(null);
+            }
 
             setMensagem({
                 texto: `Produto "${nome}" excluído com sucesso!`,
                 tipo: 'success'
             });
+
+            return true;
         } catch (erro) {
             console.error('Erro ao excluir produto:', erro);
 
-            const atual = lerProdutosLocais().length > 0 ? lerProdutosLocais() : produtos;
-            const novaLista = atual.filter((item) => item.id !== id);
-
-            salvarListaLocal(novaLista);
-
-            if (produtoEmEdicao?.id === id) setProdutoEmEdicao(null);
-
             setMensagem({
-                texto: `Produto "${nome}" removido localmente (API indisponível).`,
-                tipo: 'info'
+                texto: `Não foi possível excluir o produto: ${erro.message}`,
+                tipo: 'danger'
             });
+
+            return false;
         }
     };
 
@@ -714,6 +783,7 @@ export default function EditarProdutos() {
                     {mensagem.texto && (
                         <div className={`alert alert-${mensagem.tipo} alert-dismissible fade show rounded-3`}>
                             {mensagem.texto}
+
                             <button
                                 type="button"
                                 className="btn-close"
@@ -759,7 +829,11 @@ export default function EditarProdutos() {
                     </div>
 
                     <TableCard colunas={colunasResumo} acoes={acaoVoltar}>
-                        {produtos.length === 0 ? (
+                        {carregandoProdutos ? (
+                            <div className="p-4 text-center text-muted">
+                                Carregando produtos...
+                            </div>
+                        ) : produtos.length === 0 ? (
                             <div className="p-4 text-center text-muted">
                                 Nenhum produto cadastrado.
                             </div>
@@ -802,8 +876,12 @@ export default function EditarProdutos() {
                                             )}
 
                                             <div>
-                                                <h6 className="mb-0 fw-bold text-dark">{produto.nome}</h6>
-                                                <small className="text-muted">ID: {produto.id}</small>
+                                                <h6 className="mb-0 fw-bold text-dark">
+                                                    {produto.nome}
+                                                </h6>
+                                                <small className="text-muted">
+                                                    ID: {produto.id}
+                                                </small>
                                             </div>
                                         </div>
 

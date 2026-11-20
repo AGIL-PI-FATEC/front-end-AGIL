@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import imagemPerfil from '../assets/imagem_perfil.png';
 import '../styles/header.css';
 
-export default function Header() {
+export default function Header({ valorBusca = '', onBuscar = () => {} }) {
     const navigate = useNavigate();
 
     const usuarioLogado =
@@ -26,6 +26,8 @@ export default function Header() {
                     type="text"
                     className="form-control rounded-pill ps-4 pe-5"
                     placeholder="Buscar"
+                    value={valorBusca}
+                    onChange={(e) => onBuscar(e.target.value)}
                 />
 
                 <i className="bi bi-search position-absolute top-50 end-0 translate-middle-y me-3"></i>
