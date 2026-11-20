@@ -149,22 +149,8 @@ export default function PaginaInicial() {
             <div className="col-md-3">Estoque</div>
         </>
     );
-    // Botão de edição da tabela
-    const acoesProdutos = (
-        <button
-            type="button"
-            onClick={(e) => irParaEditarProdutos(e)}
-            title="Editar Produtos"
-            className="btn btn-link p-0 text-reset"
-            style={{
-                cursor: 'pointer',
-                position: 'relative',
-                zIndex: 10
-            }}
-        >
-            <i className="bi bi-pencil-fill"></i>
-        </button>
-    );
+
+
     return (
         <div className="d-flex flex-column min-vh-100">
             <div className="d-flex flex-column flex-md-row p-3 gap-3 flex-grow-1">
@@ -197,10 +183,7 @@ export default function PaginaInicial() {
                                 <h5 className="fw-bold mb-3">
                                     Resumo do Estoque
                                 </h5>
-                                <TableCard
-                                    colunas={colunasProdutos}
-                                    acoes={acoesProdutos}
-                                >
+                                <TableCard colunas={colunasProdutos}>
                                     {carregandoProdutos ? (
                                         <div className="p-4 text-center text-muted">
                                             Carregando produtos...

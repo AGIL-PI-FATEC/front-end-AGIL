@@ -42,7 +42,7 @@ function obterGestorId() {
     }
 }
 
-// O armazenamento local guarda somente as imagens dos produtos.
+// Mantido caso outras partes da aplicação ainda leiam imagens locais antigas
 function lerImagensLocais() {
     try {
         const salvas = localStorage.getItem(STORAGE_KEY);
@@ -50,18 +50,6 @@ function lerImagensLocais() {
     } catch (erro) {
         console.error('Erro ao ler imagens locais:', erro);
         return {};
-    }
-}
-
-function salvarImagemLocal(id, imagem) {
-    if (id === undefined || id === null || !imagem) return;
-
-    try {
-        const imagens = lerImagensLocais();
-        imagens[id] = imagem;
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(imagens));
-    } catch (erro) {
-        console.error('Erro ao salvar imagem local:', erro);
     }
 }
 
@@ -198,16 +186,13 @@ export default function EditarProdutos() {
                     preco: precoConvertido,
                     estoqueCaixas: caixasConvertidas,
                     qtdPorCaixa: qtdCaixaConvertida,
-                    gestorId
+                    gestorId,
+                    imagem
                 })
             });
 
             if (!resposta.ok) {
                 throw new Error(await obterErroResposta(resposta));
-            }
-
-            if (imagem) {
-                salvarImagemLocal(produtoParam.id, imagem);
             }
 
             setMensagem({
