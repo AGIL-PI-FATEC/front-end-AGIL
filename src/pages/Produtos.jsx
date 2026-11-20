@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
 import TableCard from '../components/TableCard';
@@ -22,6 +23,7 @@ const PRODUTOS_FALLBACK = [
 function lerProdutosSalvos() {
     try {
         const salvos = localStorage.getItem(STORAGE_KEY);
+
         if (salvos) {
             const parsed = JSON.parse(salvos);
             if (Array.isArray(parsed)) return parsed;
@@ -29,36 +31,47 @@ function lerProdutosSalvos() {
     } catch {
         // ignora erro de leitura
     }
+
     return PRODUTOS_FALLBACK;
 }
 
 export default function Produtos() {
     const navigate = useNavigate();
+
     const [produtos, setProdutos] = useState([]);
     const [carregando, setCarregando] = useState(true);
     const [avisoApi, setAvisoApi] = useState('');
-    
-    // Correção: o useState foi movido para dentro do componente
     const [termoBusca, setTermoBusca] = useState('');
 
     const carregarProdutos = useCallback(async () => {
         setCarregando(true);
+
         try {
             const resposta = await fetch(API_URL);
+
             if (!resposta.ok) {
                 throw new Error(`HTTP ${resposta.status}`);
             }
+
             const dados = await resposta.json();
             const lista = Array.isArray(dados) ? dados : [];
+
             setProdutos(lista);
             setAvisoApi('');
             localStorage.setItem(STORAGE_KEY, JSON.stringify(lista));
+
         } catch (erro) {
             console.error('Erro ao buscar produtos da API:', erro);
+
             const listaLocal = lerProdutosSalvos();
+
             localStorage.setItem(STORAGE_KEY, JSON.stringify(listaLocal));
             setProdutos(listaLocal);
-            setAvisoApi('Não foi possível conectar à API em localhost:8080. Exibindo dados locais/salvos.');
+
+            setAvisoApi(
+                'Não foi possível conectar à API em localhost:8080. Exibindo dados locais/salvos.'
+            );
+
         } finally {
             setCarregando(false);
         }
@@ -66,6 +79,7 @@ export default function Produtos() {
 
     useEffect(() => {
         carregarProdutos();
+
         window.addEventListener('focus', carregarProdutos);
 
         return () => {
@@ -81,10 +95,13 @@ export default function Produtos() {
 
     const obterImagemProduto = (prod) => {
         if (prod.imagem) return prod.imagem;
+
         const n = prod.nome ? prod.nome.toLowerCase() : '';
+
         if (n.includes('luva')) return luvasImg;
         if (n.includes('seringa')) return seringaImg;
         if (n.includes('máscara') || n.includes('mascara')) return mascaraImg;
+
         return null;
     };
 
@@ -94,16 +111,6 @@ export default function Produtos() {
             <div className="col-md-3">Preço</div>
             <div className="col-md-3">Estoque</div>
         </>
-    );
-
-    const acoesProdutos = (
-        <Link
-            to="/editar-produtos"
-            title="Editar Produtos"
-            style={{ color: 'inherit', textDecoration: 'none' }}
-        >
-            <i className="bi bi-pencil-fill" style={{ cursor: 'pointer' }}></i>
-        </Link>
     );
 
     return (
@@ -125,7 +132,7 @@ export default function Produtos() {
                         </div>
                     )}
 
-                    <TableCard colunas={colunasProdutos} acoes={acoesProdutos}>
+                    <TableCard colunas={colunasProdutos}>
                         {carregando ? (
                             <div className="p-4 text-center text-muted">
                                 Carregando produtos...
@@ -145,7 +152,9 @@ export default function Produtos() {
                                     <div
                                         key={prod.id ?? index}
                                         className={`row align-items-center p-3 m-0 ${
-                                            index < produtosFiltrados.length - 1 ? 'border-bottom' : ''
+                                            index < produtosFiltrados.length - 1
+                                                ? 'border-bottom'
+                                                : ''
                                         }`}
                                     >
                                         <div className="col-12 col-md-6 d-flex align-items-center gap-3 mb-2 mb-md-0">
@@ -172,8 +181,11 @@ export default function Produtos() {
                                                     <i className="bi bi-box-seam fs-5"></i>
                                                 </div>
                                             )}
+
                                             <div>
-                                                <h6 className="mb-0 fw-bold text-dark">{prod.nome}</h6>
+                                                <h6 className="mb-0 fw-bold text-dark">
+                                                    {prod.nome}
+                                                </h6>
                                             </div>
                                         </div>
 
@@ -181,6 +193,7 @@ export default function Produtos() {
                                             <h6 className="mb-0 fw-bold">
                                                 R$ {Number(prod.preco || 0).toFixed(2).replace('.', ',')}
                                             </h6>
+
                                             <small className="text-secondary">
                                                 Caixa com {qtdPorCaixa}
                                             </small>
@@ -193,11 +206,13 @@ export default function Produtos() {
                                         >
                                             <span>
                                                 <i className="bi bi-circle-fill small me-1"></i>
+
                                                 <span className="d-none d-sm-inline">
                                                     {emEstoque
                                                         ? `${estoqueCaixas} ${estoqueCaixas === 1 ? 'Caixa' : 'Caixas'}`
                                                         : 'Sem estoque'}
                                                 </span>
+
                                                 <span className="d-inline d-sm-none">
                                                     {emEstoque ? 'Em estoque' : 'Sem estoque'}
                                                 </span>
@@ -209,7 +224,9 @@ export default function Produtos() {
                                                 title="Editar este produto"
                                                 onClick={() =>
                                                     navigate('/editar-produtos', {
-                                                        state: { produtoSelecionado: prod }
+                                                        state: {
+                                                            produtoSelecionado: prod
+                                                        }
                                                     })
                                                 }
                                             >
@@ -226,7 +243,6 @@ export default function Produtos() {
             </div>
 
             <Footer />
-
         </div>
     );
 }

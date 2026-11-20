@@ -13,15 +13,23 @@ export default function Notificacoes() {
     // Estado do termo de busca adicionado
     const [termoBusca, setTermoBusca] = useState('');
 
-    const gestor = JSON.parse(sessionStorage.getItem('gestorLogado'));
-    const gestorId = gestor?.id;
+    const gestor = JSON.parse(
+        sessionStorage.getItem('gestorLogado') || 'null'
+    );
+
+    const funcionario = JSON.parse(
+        sessionStorage.getItem('funcionarioLogado') || 'null'
+    );
+
+    const gestorId = gestor?.id || funcionario?.gestorId;
+    const ehFuncionario = !!funcionario;
 
     const API_URL = import.meta.env.VITE_API_URL;
 
     useEffect(() => {
         async function buscarNotificacoes() {
             if (!gestorId) {
-                setErro('Não foi possível identificar o gestor logado.');
+                setErro('Não foi possível identificar a empresa ou o gestor logado.');
                 setCarregando(false);
                 return;
             }
@@ -217,7 +225,7 @@ export default function Notificacoes() {
                                             </small>
                                         )}
 
-                                        {!item.lida ? (
+                                        {!item.lida && !ehFuncionario ? (
                                             <div>
                                                 <button
                                                     type="button"
@@ -228,12 +236,12 @@ export default function Notificacoes() {
                                                     Marcar como lida
                                                 </button>
                                             </div>
-                                        ) : (
+                                        ) : item.lida ? (
                                             <small className="texto-lida mt-2 d-inline-block">
                                                 <i className="bi bi-check2-all me-1"></i>
                                                 Lida
                                             </small>
-                                        )}
+                                        ) : null}
                                     </div>
 
                                     <div
