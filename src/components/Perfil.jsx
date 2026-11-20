@@ -1,24 +1,48 @@
 
 import React, { useState, useEffect } from 'react';
 import '../styles/perfil.css';
+import imagemPerfil from '../assets/imagem_perfil.png';
 
 export default function Perfil({ titulo, usuario, tipo, onSalvar }) {
     const [nome, setNome] = useState(usuario?.nome || '');
     const [email, setEmail] = useState(usuario?.email || '');
+    const [foto, setFoto] = useState(usuario?.foto || '');
 
     const somenteVisualizacao = tipo === 'funcionario';
 
     useEffect(() => {
         setNome(usuario?.nome || '');
         setEmail(usuario?.email || '');
+        setFoto(usuario?.foto || '');
     }, [usuario]);
+
+    function handleFotoChange(event) {
+        const arquivo = event.target.files[0];
+
+        if (!arquivo) return;
+
+        if (!arquivo.type.startsWith('image/')) {
+            alert('Selecione um arquivo de imagem válido.');
+            event.target.value = '';
+            return;
+        }
+
+        const leitor = new FileReader();
+
+        leitor.onloadend = () => {
+            setFoto(leitor.result);
+        };
+
+        leitor.readAsDataURL(arquivo);
+    }
 
     const handleSubmit = (e) => {
         e.preventDefault();
 
         onSalvar({
             nome: nome,
-            email: email
+            email: email,
+            foto: foto || null
         });
     };
 
@@ -27,7 +51,36 @@ export default function Perfil({ titulo, usuario, tipo, onSalvar }) {
             <h2>{titulo}</h2>
 
             <form onSubmit={handleSubmit}>
-                <div className="perfil-conteudo">
+
+                {tipo === 'gestor' && (
+                    <div className="perfil-foto">
+                        <label>Foto de perfil</label>
+
+                        <div className="perfil-foto-conteudo">
+                            <img
+                                src={foto || imagemPerfil}
+                                alt="Foto do gestor"
+                                className="perfil-imagem"
+                            />
+
+                            <div className="perfil-foto-selecao">
+                                <input
+                                    type="file"
+                                    className="form-control"
+                                    accept="image/*"
+                                    onChange={handleFotoChange}
+                                />
+
+                                <small>
+                                    A foto é opcional. Se não selecionar uma,
+                                    será utilizada a imagem padrão.
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                <div className="perfil-dados">
 
                     <div className="perfil-campo">
                         <label htmlFor="nome">Nome</label>
@@ -93,6 +146,7 @@ export default function Perfil({ titulo, usuario, tipo, onSalvar }) {
                             </div>
                         </>
                     )}
+
                 </div>
 
                 {!somenteVisualizacao && (
@@ -100,6 +154,7 @@ export default function Perfil({ titulo, usuario, tipo, onSalvar }) {
                         Salvar alterações
                     </button>
                 )}
+
             </form>
         </div>
     );

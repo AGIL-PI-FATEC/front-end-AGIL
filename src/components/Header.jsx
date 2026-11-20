@@ -45,7 +45,7 @@ export default function Header({ valorBusca = '', onBuscar = () => {} }) {
                     title="Acessar meu perfil"
                 >
                     <img
-                        src={imagemPerfil}
+                        src={usuarioLogado?.foto || imagemPerfil}
                         className="rounded-circle"
                         width="35"
                         height="35"

@@ -39,19 +39,79 @@
     border-radius: 5px;
 }
 
-/* Organização dos campos */
-.perfil-conteudo {
+/* Organização da foto de perfil */
+.perfil-foto {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 30px;
+    margin-bottom: 28px;
+}
+
+.perfil-foto label {
+    color: #263b35;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.perfil-foto-conteudo {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+/* Imagem de perfil */
+.perfil-imagem {
+    width: 85px !important;
+    height: 85px !important;
+    min-width: 85px;
+    max-width: 85px;
+    border-radius: 50%;
+    object-fit: cover;
+    display: block;
+}
+
+/* Seleção da foto */
+.perfil-foto-selecao {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    max-width: 400px;
+}
+
+.perfil-foto-selecao input {
+    width: 100%;
+    min-height: 45px;
+    padding: 8px;
+    border: 1px solid #d8e3df;
+    border-radius: 8px;
+    background-color: #ffffff;
+    color: #263b35;
+    font-size: 14px;
+    box-sizing: border-box;
+}
+
+.perfil-foto-selecao small {
+    color: #65736e;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+/* Organização dos dados */
+.perfil-dados {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 24px;
-    margin-top: 30px;
+    margin-top: 25px;
 }
 
+/* Campos somente leitura */
+/* Organização de cada campo individual */
 .perfil-campo {
     display: flex;
     flex-direction: column;
-    gap: 9px;
-    min-width: 0;
+    gap: 8px;
 }
 
 .perfil-campo label {
@@ -62,32 +122,12 @@
 
 .perfil-campo input {
     width: 100%;
-    height: 45px;
-    padding: 0 14px;
+    min-height: 45px;
+    padding: 10px 14px;
     border: 1px solid #d8e3df;
     border-radius: 8px;
     background-color: #ffffff;
     color: #263b35;
-    font-size: 14px;
-    box-sizing: border-box;
-    outline: none;
-    transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.perfil-campo input:focus {
-    border-color: #168b6c;
-    box-shadow: 0 0 0 3px rgba(22, 139, 108, 0.12);
-}
-
-/* Campos somente leitura */
-.perfil-campo p {
-    min-height: 45px;
-    margin: 0;
-    padding: 13px 14px;
-    border: 1px solid #e5ece9;
-    border-radius: 8px;
-    background-color: #f5f8f7;
-    color: #65736e;
     font-size: 14px;
     box-sizing: border-box;
 }
@@ -147,10 +187,19 @@
         font-size: 23px;
     }
 
-    .perfil-conteudo {
+    .perfil-dados {
         grid-template-columns: 1fr;
         gap: 19px;
         margin-top: 25px;
+    }
+
+    .perfil-foto-conteudo {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .perfil-foto-selecao {
+        max-width: 100%;
     }
 
     .btn-salvar-perfil {
@@ -160,9 +209,9 @@
 
 @media (max-width: 480px) {
     .perfil-voltar {
-    width: 100%;
-    justify-content: center;
-}
+        width: 100%;
+        justify-content: center;
+    }
     .perfil-container {
         margin: 15px auto;
         padding: 22px 16px;
