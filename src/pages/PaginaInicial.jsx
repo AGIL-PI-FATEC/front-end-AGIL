@@ -9,24 +9,31 @@ import luvasImg from '../assets/luvas.jpg';
 import seringaImg from '../assets/seringa.jpg';
 import mascaraImg from '../assets/mascara.jpg';
 import imagemPerfil from '../assets/imagem_perfil.png';
+
 // URL base da API
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 const PRODUTOS_API_URL = `${API_URL}/produtos`;
+
 export default function PaginaInicial() {
     const navigate = useNavigate();
+
     // Recupera os dados da sessão
     const gestor = JSON.parse(
         sessionStorage.getItem('gestorLogado') || 'null'
     );
+
     const funcionarioLogado = JSON.parse(
         sessionStorage.getItem('funcionarioLogado') || 'null'
     );
+
     // Identifica o gestor responsável
-    const gestorId = gestor?.id || funcionarioLogado?.gestorId;
+    const gestorId = gestor?.id ?? funcionarioLogado?.gestorId ?? null;
+
     // Estados dos funcionários
     const [listaFuncionarios, setListaFuncionarios] = useState([]);
     const [carregandoFuncionarios, setCarregandoFuncionarios] = useState(true);
     const [erroFuncionarios, setErroFuncionarios] = useState('');
+
     // Estados dos produtos
     const [produtos, setProdutos] = useState([]);
     const [carregandoProdutos, setCarregandoProdutos] = useState(true);
@@ -34,6 +41,7 @@ export default function PaginaInicial() {
 
     // Estado da busca da página inicial
     const [termoBusca, setTermoBusca] = useState('');
+
     // Busca os funcionários vinculados ao gestor
     useEffect(() => {
         async function buscarFuncionarios() {
@@ -44,21 +52,29 @@ export default function PaginaInicial() {
                 setCarregandoFuncionarios(false);
                 return;
             }
+
+            setCarregandoFuncionarios(true);
+            setErroFuncionarios('');
+
             try {
                 const resposta = await fetch(
-                    `${API_URL}/funcionarios?gestorId=${gestorId}`
+                    `${API_URL}/funcionarios?gestorId=${encodeURIComponent(gestorId)}`
                 );
+
                 if (!resposta.ok) {
                     throw new Error(
                         'Não foi possível carregar os funcionários.'
                     );
                 }
+
                 const dados = await resposta.json();
+
                 if (!Array.isArray(dados)) {
                     throw new Error(
                         'A resposta da API não possui uma lista válida de funcionários.'
                     );
                 }
+
                 setListaFuncionarios(dados);
             } catch (error) {
                 console.error('Erro ao buscar funcionários:', error);
@@ -68,23 +84,41 @@ export default function PaginaInicial() {
                 setCarregandoFuncionarios(false);
             }
         }
+
         buscarFuncionarios();
     }, [gestorId]);
+
     // Busca os produtos diretamente da API
     const carregarProdutos = useCallback(async () => {
+        if (!gestorId) {
+            setProdutos([]);
+            setAvisoApi('Não foi possível identificar o gestor responsável.');
+            setCarregandoProdutos(false);
+            return;
+        }
+
         setCarregandoProdutos(true);
         setAvisoApi('');
+
         try {
-            const resposta = await fetch(PRODUTOS_API_URL);
+            const resposta = await fetch(
+                `${PRODUTOS_API_URL}?gestorId=${encodeURIComponent(gestorId)}`
+            );
+
             if (!resposta.ok) {
-                throw new Error(`Erro ao carregar produtos: HTTP ${resposta.status}`);
+                throw new Error(
+                    `Erro ao carregar produtos: HTTP ${resposta.status}`
+                );
             }
+
             const dados = await resposta.json();
+
             if (!Array.isArray(dados)) {
                 throw new Error(
                     'A resposta da API não possui uma lista válida de produtos.'
                 );
             }
+
             setProdutos(dados);
         } catch (erro) {
             console.error('Erro ao buscar produtos da API:', erro);
@@ -95,31 +129,39 @@ export default function PaginaInicial() {
         } finally {
             setCarregandoProdutos(false);
         }
-    }, []);
+    }, [gestorId]);
+
     // Carrega os produtos e atualiza ao retornar à página
     useEffect(() => {
         carregarProdutos();
+
         window.addEventListener('focus', carregarProdutos);
+
         return () => {
             window.removeEventListener('focus', carregarProdutos);
         };
     }, [carregarProdutos]);
+
     // Navega para a página de edição de produtos
     const irParaEditarProdutos = (e, produto = null) => {
         if (e) {
             e.preventDefault();
             e.stopPropagation();
         }
+
         navigate('/editar-produtos', {
             state: produto
                 ? { produtoSelecionado: produto }
                 : undefined
         });
     };
+
     // Identifica a imagem de cada produto
     const obterImagemProduto = (prod) => {
         if (prod.imagem) return prod.imagem;
+
         const nome = prod.nome ? prod.nome.toLowerCase() : '';
+
         if (nome.includes('luva')) return luvasImg;
         if (nome.includes('seringa')) return seringaImg;
         if (
@@ -128,8 +170,10 @@ export default function PaginaInicial() {
         ) {
             return mascaraImg;
         }
+
         return null;
     };
+
     // Filtra os produtos pelo nome
     const produtosFiltrados = produtos.filter((prod) =>
         (prod.nome || '').toLowerCase().includes(termoBusca.toLowerCase())
@@ -150,7 +194,6 @@ export default function PaginaInicial() {
         </>
     );
 
-
     return (
         <div className="d-flex flex-column min-vh-100">
             <div className="d-flex flex-column flex-md-row p-3 gap-3 flex-grow-1">
@@ -162,7 +205,6 @@ export default function PaginaInicial() {
                     />
                     <div className="container-fluid flex-grow-1 p-0">
                         {/* Apresentação da página */}
-                        {/* Apresentação da página */}
                         <div className="inicio-banner mb-4">
                             <h1 className="fw-bold">
                                 Bem-Vindo ao Sistema de Estoque
@@ -171,12 +213,14 @@ export default function PaginaInicial() {
                                 Gerencie seus produtos e acompanhe o consumo em tempo real.
                             </p>
                         </div>
+
                         {/* Aviso de conexão com a API */}
                         {avisoApi && (
                             <div className="alert alert-warning rounded-3 py-2 small">
                                 {avisoApi}
                             </div>
                         )}
+
                         <div className="row g-4">
                             {/* Resumo do estoque */}
                             <div className="col-12 col-lg-8">
@@ -210,6 +254,7 @@ export default function PaginaInicial() {
                                                 prod.qtdPorCaixa ?? 0
                                             );
                                             const emEstoque = estoqueCaixas > 0;
+
                                             return (
                                                 <div
                                                     key={prod.id ?? index}
@@ -252,6 +297,7 @@ export default function PaginaInicial() {
                                                             </h6>
                                                         </div>
                                                     </div>
+
                                                     {/* Preço */}
                                                     <div className="col-6 col-md-3">
                                                         <h6 className="mb-0 fw-bold">
@@ -263,6 +309,7 @@ export default function PaginaInicial() {
                                                             Caixa com {qtdPorCaixa}
                                                         </small>
                                                     </div>
+
                                                     {/* Estoque */}
                                                     <div
                                                         className={`col-6 col-md-3 fw-medium d-flex align-items-center justify-content-between ${
@@ -305,6 +352,7 @@ export default function PaginaInicial() {
                                     )}
                                 </TableCard>
                             </div>
+
                             {/* Lista de funcionários */}
                             <div className="col-12 col-lg-4">
                                 <div className="colaborators-card mb-3">
