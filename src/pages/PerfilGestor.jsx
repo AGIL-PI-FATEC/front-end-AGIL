@@ -95,7 +95,9 @@ export default function PerfilGestor() {
             });
 
             if (!resposta.ok) {
-                throw new Error('Não foi possível excluir a conta.');
+                // Mostra o motivo enviado pelo backend (ex.: funcionários vinculados)
+                const dadosErro = await resposta.json().catch(() => null);
+                throw new Error(dadosErro?.erro || 'Não foi possível excluir a conta.');
             }
 
             sessionStorage.removeItem('gestorLogado');

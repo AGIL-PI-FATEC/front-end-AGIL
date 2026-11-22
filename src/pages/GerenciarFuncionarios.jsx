@@ -164,7 +164,10 @@ export default function GerenciarFuncionarios() {
             );
 
             if (!resposta.ok) {
-                const detalhe = await resposta.text();
+                // O backend devolve {"erro": "..."} ou, na validação, {"campo": "mensagem"}
+                const dadosErro = await resposta.json().catch(() => null);
+                const detalhe = dadosErro?.erro
+                    || (dadosErro ? Object.values(dadosErro).join(' ') : '');
                 throw new Error(
                     detalhe || 'Não foi possível salvar o funcionário.'
                 );
