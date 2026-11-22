@@ -68,7 +68,7 @@ export default function Cadastro() {
       setCarregando(true);
 
       // comunicação entre o React e o Spring Boot
-      const response = await fetch('http://localhost:8080/gestores', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/gestores`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
