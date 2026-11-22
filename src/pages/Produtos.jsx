@@ -12,7 +12,7 @@ import luvasImg from '../assets/luvas.jpg';
 import seringaImg from '../assets/seringa.jpg';
 import mascaraImg from '../assets/mascara.jpg';
 
-const API_URL = 'http://localhost:8080/produtos';
+const API_URL = `${(import.meta.env.VITE_API_URL || 'http://localhost:8080').replace(/\/$/, '')}/produtos`;
 const STORAGE_KEY = 'agil_produtos';
 
 export default function Produtos() {
